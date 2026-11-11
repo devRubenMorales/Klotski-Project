@@ -1,3 +1,5 @@
+import { LEVELS, DEFAULT_LEVEL } from '../data/levels.js';
+
 export const PROGRESS_STORAGE_KEY = 'klotski_progress_v1';
 
 /**
@@ -38,6 +40,40 @@ export function getLevelProgress(levelId) {
   if (!levelId) return null;
   const all = loadProgress();
   return all[levelId] || null;
+}
+
+/**
+ * Selecciona automáticamente el nivel inicial al abrir o recargar el juego:
+ * 1. Lee el progreso guardado en localStorage ('klotski_progress_v1').
+ * 2. Recorre el array ordenado `levels` (del Reto 1 al Reto 15) con `.find()` y devuelve
+ *    el primer nivel cuyo estado NO sea `completed: true`.
+ * 3. Fallback (100% completado): si ya completó los 15 niveles, devuelve el primer nivel
+ *    donde `bestMoves > optimalMoves` (para mejorar marca) o, en su defecto, `levels[0]`.
+ *
+ * @param {Array<Object>} [levels=LEVELS]
+ * @returns {Object}
+ */
+export function getInitialLevel(levels = LEVELS) {
+  if (!Array.isArray(levels) || levels.length === 0) {
+    return DEFAULT_LEVEL;
+  }
+
+  const progress = loadProgress();
+
+  // 1. Primer nivel pendiente (no completado) en orden ascendente de dificultad
+  const nextPendingLevel = levels.find((lvl) => !progress[lvl.id]?.completed);
+  if (nextPendingLevel) {
+    return nextPendingLevel;
+  }
+
+  // 2. Fallback (100% completado): primer nivel con margen de mejora respecto al óptimo BFS
+  const nextImprovableLevel = levels.find((lvl) => {
+    const bestMoves = progress[lvl.id]?.bestMoves;
+    const optimalMoves = lvl.optimalMoves ?? lvl.minSteps;
+    return typeof bestMoves === 'number' && bestMoves > optimalMoves;
+  });
+
+  return nextImprovableLevel || levels[0];
 }
 
 /**

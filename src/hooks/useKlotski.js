@@ -6,8 +6,14 @@ import {
   canMovePieceTo,
   isValidBoardState,
 } from '../solver/klotskiSolver.js';
-import { DEFAULT_LEVEL } from '../data/levels.js';
-import { loadProgress, recordLevelVictory } from '../utils/storage.js';
+import { LEVELS } from '../data/levels.js';
+import {
+  loadProgress,
+  recordLevelVictory,
+  getInitialLevel,
+} from '../utils/storage.js';
+
+export { getInitialLevel };
 
 /**
  * Custom Hook para gestionar el estado, la interacción manual,
@@ -16,18 +22,22 @@ import { loadProgress, recordLevelVictory } from '../utils/storage.js';
  * y la reproducción del rompecabezas Klotski.
  *
  * @param {Object} [options]
- * @param {Object} [options.initialLevel=DEFAULT_LEVEL]
+ * @param {Object} [options.initialLevel] - Nivel opcional; por defecto usa getInitialLevel(LEVELS)
  * @param {number} [options.defaultSpeed=400]
  * @param {boolean} [options.autoSolve=true]
  */
 export function useKlotski({
-  initialLevel = DEFAULT_LEVEL,
+  initialLevel,
   defaultSpeed = 400,
   autoSolve = true,
 } = {}) {
-  const [currentLevel, setCurrentLevel] = useState(initialLevel);
+  const [currentLevel, setCurrentLevel] = useState(
+    () => initialLevel || getInitialLevel(LEVELS)
+  );
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [history, setHistory] = useState([initialLevel.pieces]);
+  const [history, setHistory] = useState(() => [
+    (initialLevel || getInitialLevel(LEVELS)).pieces,
+  ]);
   const [moves, setMoves] = useState([]);
   const [isRouteDirty, setIsRouteDirty] = useState(false);
   const [isSolving, setIsSolving] = useState(false);
