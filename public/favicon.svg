@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Base cuadrada negra con esquinas superiores biseladas (fiel a logo.jpeg) -->
+  <path
+    d="M 10 4 L 90 4 L 96 10 L 96 92 C 96 94.2 94.2 96 92 96 L 8 96 C 5.8 96 4 94.2 4 92 L 4 10 Z"
+    fill="#141417"
+    stroke="#27272a"
+    stroke-width="2"
+  />
+
+  <!-- Marco cuadrado exterior del grabado central -->
+  <rect
+    x="16"
+    y="16"
+    width="68"
+    height="68"
+    rx="3"
+    stroke="#f4f4f5"
+    stroke-width="5.5"
+    fill="#18181b"
+  />
+
+  <!-- Pines superiores (2 barras verticales) -->
+  <rect x="41.5" y="24" width="5.5" height="9" rx="1.2" fill="#f4f4f5" />
+  <rect x="53" y="24" width="5.5" height="9" rx="1.2" fill="#f4f4f5" />
+
+  <!-- Pines inferiores (2 barras verticales) -->
+  <rect x="41.5" y="67" width="5.5" height="9" rx="1.2" fill="#f4f4f5" />
+  <rect x="53" y="67" width="5.5" height="9" rx="1.2" fill="#f4f4f5" />
+
+  <!-- Pines izquierdos (2 barras horizontales) -->
+  <rect x="24" y="41.5" width="9" height="5.5" rx="1.2" fill="#f4f4f5" />
+  <rect x="24" y="53" width="9" height="5.5" rx="1.2" fill="#f4f4f5" />
+
+  <!-- Pines derechos (2 barras horizontales) -->
+  <rect x="67" y="41.5" width="9" height="5.5" rx="1.2" fill="#f4f4f5" />
+  <rect x="67" y="53" width="9" height="5.5" rx="1.2" fill="#f4f4f5" />
+
+  <!-- Marco cuadrado interior central -->
+  <rect
+    x="36"
+    y="36"
+    width="28"
+    height="28"
+    rx="2.5"
+    stroke="#f4f4f5"
+    stroke-width="5"
+    fill="#141417"
+  />
+
+  <!-- Núcleo central sólido -->
+  <rect
+    x="44.5"
+    y="44.5"
+    width="11"
+    height="11"
+    rx="3"
+    fill="#f4f4f5"
+  />
+</svg>
