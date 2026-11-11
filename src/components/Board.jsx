@@ -23,6 +23,9 @@ const CELL_SIZE = 72; // Tamaño estándar para 288px x 360px
  * @param {number} [props.currentStepIndex=0] - Paso actual en la ruta del Solver
  * @param {Object|null} [props.levelProgress=null] - Progreso guardado del nivel activo
  * @param {Function} [props.onReset] - Reiniciar el nivel a un intento limpio desde 0
+ * @param {number} [props.completedLevelsCount=0] - Cantidad de niveles resueltos sin IA
+ * @param {number} [props.totalLevelsCount=15] - Cantidad total de niveles
+ * @param {Function} [props.onOpenAchievements] - Abrir el modal de Sala de Trofeos
  * @param {boolean} [props.isLeftDrawerOpen=false] - Estado gaveta izquierda
  * @param {boolean} [props.isRightDrawerOpen=false] - Estado gaveta derecha
  * @param {Function} [props.onToggleLeft] - Alternar gaveta izquierda
@@ -41,6 +44,9 @@ export default function Board({
   currentStepIndex = 0,
   levelProgress = null,
   onReset,
+  completedLevelsCount = 0,
+  totalLevelsCount = 15,
+  onOpenAchievements,
   isLeftDrawerOpen = false,
   isRightDrawerOpen = false,
   onToggleLeft,
@@ -210,11 +216,16 @@ export default function Board({
             )}
           </div>
 
-          {/* Logo / Escudo Blanco Vectorizado (Fiel al grabado original del tablero físico) */}
-          <div className="shrink-0 flex items-center justify-center pr-0.5">
+          {/* Botón de Escudo / Trofeos (Abre la Sala de Trofeos y muestra total completado) */}
+          <button
+            type="button"
+            onClick={onOpenAchievements}
+            title={`Abrir Sala de Trofeos y Récords (${completedLevelsCount}/${totalLevelsCount} completados)`}
+            className="group relative shrink-0 flex flex-col items-center justify-center px-1 py-0.5 rounded-xl hover:bg-zinc-900/90 border border-transparent hover:border-amber-400/50 transition-all cursor-pointer active:scale-95"
+          >
             <svg
               viewBox="0 0 100 112"
-              className="w-11 h-13 drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]"
+              className="w-9 h-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)] group-hover:drop-shadow-[0_0_8px_rgba(251,191,36,0.5)] transition-all"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
@@ -232,7 +243,13 @@ export default function Board({
               {/* Ojo derecho (paralelogramo inclinado hacia el centro) */}
               <path d="M 73 39 L 56 50 L 56 73 L 73 62 Z" fill="#ffffff" />
             </svg>
-          </div>
+            <div className="mt-0.5 px-1.5 py-[1px] rounded-full bg-zinc-900/95 border border-amber-400/40 group-hover:border-amber-400 text-[8px] font-mono font-bold text-amber-300 flex items-center gap-0.5 leading-none shadow-sm">
+              <span>🏆</span>
+              <span>
+                {completedLevelsCount}/{totalLevelsCount}
+              </span>
+            </div>
+          </button>
         </div>
 
         {/* Área de Juego (5 Filas × 4 Columnas = 288px × 360px) */}

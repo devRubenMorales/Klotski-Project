@@ -42,9 +42,14 @@ export function useKlotski({
   const [lastMovedPieceId, setLastMovedPieceId] = useState(null);
   const [progress, setProgress] = useState(() => loadProgress());
   const [isNewRecord, setIsNewRecord] = useState(false);
+  /** @type {[any, Function]} */
+  const [victoryOutcome, setVictoryOutcome] = useState(null);
+  /** @type {[any, Function]} */
+  const [achievementToast, setAchievementToast] = useState(null);
 
   // Referencias síncronas para evitar condiciones de carrera en eventos rápidos
   const timerRef = useRef(null);
+  const toastTimerRef = useRef(null);
   const isRouteDirtyRef = useRef(false);
   const manualMovesCountRef = useRef(0);
   const usedAIRef = useRef(false);
@@ -74,24 +79,64 @@ export function useKlotski({
     currentPieces.R?.r === GOAL_POSITION.r &&
     currentPieces.R?.c === GOAL_POSITION.c;
 
-  // Guardado de progreso en localStorage al alcanzar la victoria (solo si usedAI === false)
+  // Guardado de progreso en localStorage y disparo de Toast al alcanzar la victoria (solo si usedAI === false)
   useEffect(() => {
     if (isCompleted) {
       if (!victoryRecordedRef.current) {
         victoryRecordedRef.current = true;
         if (!usedAIRef.current && currentLevel?.id) {
-          const { progress: updatedProgress, isNewRecord: newRec } =
-            recordLevelVictory(currentLevel.id, manualMovesCountRef.current);
-          setProgress(updatedProgress);
-          setIsNewRecord(newRec);
+          const movesDone = manualMovesCountRef.current;
+          const res = recordLevelVictory(currentLevel.id, movesDone);
+          setProgress(res.progress);
+          setIsNewRecord(res.isNewRecord);
+          setVictoryOutcome({
+            status: res.status,
+            isFirstCompletion: res.isFirstCompletion,
+            isNewRecord: res.isNewRecord,
+            improvedPersonalRecord: res.improvedPersonalRecord,
+            prevBestMoves: res.prevBestMoves,
+            diff: res.diff,
+            bestMoves: res.levelProgress.bestMoves,
+            movesDone,
+          });
+
+          if (res.status === 'first_completion') {
+            if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+            setAchievementToast({
+              id: Date.now(),
+              type: 'unlock',
+              icon: '🏆',
+              badge: 'LOGRO DESBLOQUEADO',
+              title: `🏆 ¡Logro Desbloqueado: ${currentLevel.name}!`,
+              subtitle: `Dominador del ${currentLevel.name} resuelto en ${movesDone} pasos`,
+            });
+            toastTimerRef.current = setTimeout(() => {
+              setAchievementToast(null);
+            }, 4000);
+          } else if (res.status === 'improved_record') {
+            if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+            setAchievementToast({
+              id: Date.now(),
+              type: 'record',
+              icon: '⚡',
+              badge: 'SUPERACIÓN PERSONAL',
+              title: `⚡ ¡Nuevo Récord en ${currentLevel.name}!`,
+              subtitle: `Bajaste tu marca a ${movesDone} pasos (-${res.diff} pasos)`,
+            });
+            toastTimerRef.current = setTimeout(() => {
+              setAchievementToast(null);
+            }, 4000);
+          }
         } else {
           setIsNewRecord(false);
+          setVictoryOutcome(null);
         }
       }
     } else {
       victoryRecordedRef.current = false;
+      setVictoryOutcome(null);
     }
-  }, [isCompleted, currentLevel?.id]);
+  }, [isCompleted, currentLevel?.id, currentLevel?.name]);
 
   /**
    * Marca el intento actual como asistido por IA.
@@ -526,13 +571,15 @@ export function useKlotski({
     solveTime,
     totalStatesExplored,
 
-    // Estados de partida manual, anti-IA y progreso
+    // Estados de partida manual, anti-IA, progreso y notificaciones de logros
     manualMovesCount,
     usedAI,
     lastMovedPieceId,
     progress,
     currentLevelProgress,
     isNewRecord,
+    victoryOutcome,
+    achievementToast,
 
     // Helpers derivados
     currentPieces,

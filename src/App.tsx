@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Board from './components/Board.jsx';
 import Controls from './components/Controls.jsx';
 import SideDrawers from './components/SideDrawers.jsx';
+import AchievementToast from './components/AchievementToast.jsx';
+import AchievementsModal from './components/AchievementsModal.jsx';
 import { useKlotski } from './hooks/useKlotski.js';
 import { LEVELS } from './data/levels.js';
+import { evaluateAchievements } from './data/achievements.js';
 
 export default function App() {
   const {
@@ -22,6 +25,8 @@ export default function App() {
     progress,
     currentLevelProgress,
     isNewRecord,
+    victoryOutcome,
+    achievementToast,
     currentMove,
     currentPieces,
     currentGrid,
@@ -40,6 +45,15 @@ export default function App() {
 
   // Estado del menú de reproducción IA (oculto al iniciar)
   const [isSolverMenuOpen, setIsSolverMenuOpen] = useState(false);
+
+  // Estado del modal de Sala de Trofeos y Récords
+  const [isAchievementsModalOpen, setIsAchievementsModalOpen] = useState(false);
+
+  // Resumen de logros completados para el botón de trofeos del tablero
+  const achievementsSummary = useMemo(
+    () => evaluateAchievements(progress, LEVELS),
+    [progress]
+  );
 
   // Estados independientes para apertura de gavetas (primarias y telescópicas)
   const [isLeftDrawerOpen, setIsLeftDrawerOpen] = useState(false);
@@ -127,13 +141,20 @@ export default function App() {
       }
 
       if (e.code === 'Escape') {
-        if (isSolverMenuOpen) {
+        if (isAchievementsModalOpen) {
+          e.preventDefault();
+          setIsAchievementsModalOpen(false);
+        } else if (isSolverMenuOpen) {
           e.preventDefault();
           handleCloseSolverMenu();
         } else if (isLeftDrawerOpen || isRightDrawerOpen) {
           e.preventDefault();
           handleCloseAllDrawers();
         }
+        return;
+      }
+
+      if (isAchievementsModalOpen) {
         return;
       }
 
@@ -157,6 +178,7 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
+    isAchievementsModalOpen,
     isSolverMenuOpen,
     isLeftDrawerOpen,
     isRightDrawerOpen,
@@ -174,19 +196,42 @@ export default function App() {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-cyan-600/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
 
+      {/* Notificación Flotante / Toast Gamer (4s al desbloquear logro o batir récord) */}
+      <AchievementToast toast={achievementToast} />
+
+      {/* Modal de Sala de Trofeos y Récords */}
+      <AchievementsModal
+        isOpen={isAchievementsModalOpen}
+        progress={progress}
+        onClose={() => setIsAchievementsModalOpen(false)}
+        onSelectLevelToImprove={(lvl: any) => {
+          loadLevel(lvl);
+          setIsAchievementsModalOpen(false);
+          handleCloseAllDrawers();
+        }}
+      />
+
       {/* Banner flotante de Victoria (absoluto para no desplazar el tablero) */}
       {isCompleted && (
-        <div className="absolute top-2.5 z-50 px-3 max-w-full">
+        <div className="absolute top-2.5 z-40 px-3 max-w-full">
           {!usedAI ? (
             <div className="animate-bounce px-4 sm:px-5 py-1.5 sm:py-2 bg-gradient-to-r from-emerald-500/95 via-teal-500/95 to-cyan-500/95 text-zinc-950 font-mono font-bold text-xs sm:text-sm rounded-full shadow-[0_0_25px_rgba(16,185,129,0.7)] border-2 border-white/70 flex items-center gap-2 flex-wrap justify-center">
               <span className="text-base sm:text-lg">🏆</span>
               <span>
                 ¡Nivel Completado en {manualMovesCount} pasos!
               </span>
-              {isNewRecord && (
+              {isNewRecord ? (
                 <span className="px-2 py-0.5 rounded-full bg-zinc-950 text-emerald-300 text-[10px] sm:text-xs font-extrabold tracking-wider border border-emerald-300/60 shadow-sm">
-                  ¡NUEVO RÉCORD!
+                  {victoryOutcome?.improvedPersonalRecord
+                    ? `¡NUEVO RÉCORD! (-${victoryOutcome.diff} pasos)`
+                    : '¡NUEVO RÉCORD!'}
                 </span>
+              ) : (
+                victoryOutcome?.bestMoves && (
+                  <span className="px-2 py-0.5 rounded-full bg-zinc-950/90 text-cyan-300 text-[10px] sm:text-xs font-semibold border border-cyan-400/50">
+                    Mejor marca personal: {victoryOutcome.bestMoves} pasos
+                  </span>
+                )
               )}
               <span className="text-base sm:text-lg">✨</span>
             </div>
@@ -285,6 +330,9 @@ export default function App() {
             currentStepIndex={currentStepIndex}
             levelProgress={currentLevelProgress}
             onReset={reset}
+            completedLevelsCount={achievementsSummary.completedCount}
+            totalLevelsCount={achievementsSummary.totalLevels}
+            onOpenAchievements={() => setIsAchievementsModalOpen(true)}
             isLeftDrawerOpen={isLeftDrawerOpen}
             isRightDrawerOpen={isRightDrawerOpen}
             onToggleLeft={handleToggleLeft}
