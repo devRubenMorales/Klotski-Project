@@ -10,6 +10,7 @@ import ChallengeCard from './ChallengeCard.jsx';
  * @param {Object} props
  * @param {Array<Object>} props.levels - Catálogo completo de 15 niveles
  * @param {Object} props.currentLevel - Nivel seleccionado actualmente
+ * @param {Record<string, any>} [props.progress] - Progreso guardado por levelId
  * @param {Function} props.onSelectLevel - Callback al seleccionar una tarjeta
  * @param {boolean} props.isLeftOpen - Apertura de gaveta izquierda primaria
  * @param {boolean} props.isLeftExtOpen - Apertura de sub-gaveta telescópica izquierda
@@ -22,6 +23,7 @@ import ChallengeCard from './ChallengeCard.jsx';
 export default function SideDrawers({
   levels,
   currentLevel,
+  progress = {},
   onSelectLevel,
   isLeftOpen,
   isLeftExtOpen,
@@ -71,6 +73,7 @@ export default function SideDrawers({
               key={lvl.id}
               level={lvl}
               isActive={currentLevel?.id === lvl.id}
+              progressData={progress?.[lvl.id] || null}
               onClick={() => onSelectLevel(lvl)}
             />
           ))}
@@ -138,6 +141,7 @@ export default function SideDrawers({
               key={lvl.id}
               level={lvl}
               isActive={currentLevel?.id === lvl.id}
+              progressData={progress?.[lvl.id] || null}
               onClick={() => onSelectLevel(lvl)}
             />
           ))}
@@ -205,6 +209,7 @@ export default function SideDrawers({
               key={lvl.id}
               level={lvl}
               isActive={currentLevel?.id === lvl.id}
+              progressData={progress?.[lvl.id] || null}
               onClick={() => onSelectLevel(lvl)}
             />
           ))}
@@ -232,6 +237,7 @@ export default function SideDrawers({
               key={lvl.id}
               level={lvl}
               isActive={currentLevel?.id === lvl.id}
+              progressData={progress?.[lvl.id] || null}
               onClick={() => onSelectLevel(lvl)}
             />
           ))}

@@ -7,11 +7,13 @@ import {
   isValidBoardState,
 } from '../solver/klotskiSolver.js';
 import { DEFAULT_LEVEL } from '../data/levels.js';
+import { loadProgress, recordLevelVictory } from '../utils/storage.js';
 
 /**
  * Custom Hook para gestionar el estado, la interacción manual,
- * la selección de niveles, la resolución BFS y la reproducción del rompecabezas Klotski.
- * Incluye invalidación de ruta (isRouteDirty) y guardia anti-superposición.
+ * la selección de niveles, el conteo de movimientos equivalentes a BFS,
+ * la regla estricta anti-IA, el guardado de progreso en localStorage
+ * y la reproducción del rompecabezas Klotski.
  *
  * @param {Object} [options]
  * @param {Object} [options.initialLevel=DEFAULT_LEVEL]
@@ -34,11 +36,23 @@ export function useKlotski({
   const [solveTime, setSolveTime] = useState(null);
   const [totalStatesExplored, setTotalStatesExplored] = useState(0);
 
-  // Referencia para el timer de reproducción automática
+  // Estados de partida manual, regla anti-IA y progreso persistente
+  const [manualMovesCount, setManualMovesCount] = useState(0);
+  const [usedAI, setUsedAI] = useState(false);
+  const [lastMovedPieceId, setLastMovedPieceId] = useState(null);
+  const [progress, setProgress] = useState(() => loadProgress());
+  const [isNewRecord, setIsNewRecord] = useState(false);
+
+  // Referencias síncronas para evitar condiciones de carrera en eventos rápidos
   const timerRef = useRef(null);
   const isRouteDirtyRef = useRef(false);
+  const manualMovesCountRef = useRef(0);
+  const usedAIRef = useRef(false);
+  const lastMovedPieceIdRef = useRef(null);
+  const victoryRecordedRef = useRef(false);
+  const initialLevelSolutionRef = useRef(null);
 
-  // Estado activo de las piezas
+  // Estado activo de las piezas con guardia anti-superposición
   const rawPieces = history[currentStepIndex] || currentLevel.pieces;
   const currentPieces = isValidBoardState(rawPieces)
     ? rawPieces
@@ -55,10 +69,39 @@ export function useKlotski({
   // Matriz 2D 5x4 calculada del estado actual para colisiones
   const currentGrid = createGrid(currentPieces);
 
-  // Determinar si el estado actual cumple con la meta
+  // Determinar si el estado actual cumple con la meta (Bloque Rojo en fila 3, col 1)
   const isCompleted =
     currentPieces.R?.r === GOAL_POSITION.r &&
     currentPieces.R?.c === GOAL_POSITION.c;
+
+  // Guardado de progreso en localStorage al alcanzar la victoria (solo si usedAI === false)
+  useEffect(() => {
+    if (isCompleted) {
+      if (!victoryRecordedRef.current) {
+        victoryRecordedRef.current = true;
+        if (!usedAIRef.current && currentLevel?.id) {
+          const { progress: updatedProgress, isNewRecord: newRec } =
+            recordLevelVictory(currentLevel.id, manualMovesCountRef.current);
+          setProgress(updatedProgress);
+          setIsNewRecord(newRec);
+        } else {
+          setIsNewRecord(false);
+        }
+      }
+    } else {
+      victoryRecordedRef.current = false;
+    }
+  }, [isCompleted, currentLevel?.id]);
+
+  /**
+   * Marca el intento actual como asistido por IA.
+   */
+  const markAIUsed = useCallback(() => {
+    usedAIRef.current = true;
+    setUsedAI(true);
+    lastMovedPieceIdRef.current = null;
+    setLastMovedPieceId(null);
+  }, []);
 
   /**
    * Ejecuta el solver BFS para encontrar la solución óptima.
@@ -90,6 +133,10 @@ export function useKlotski({
           setTotalStatesExplored(result.totalStatesExplored);
           setCurrentStepIndex(0);
           currentPiecesRef.current = result.history[0];
+
+          if (targetPieces) {
+            initialLevelSolutionRef.current = result;
+          }
         }
 
         setIsSolving(false);
@@ -99,8 +146,8 @@ export function useKlotski({
   }, []);
 
   /**
-   * Carga un nuevo nivel del catálogo, actualizando el cartucho,
-   * el tablero y recalculando automáticamente la solución óptima.
+   * Carga un nivel del catálogo y restablece el intento limpio desde 0
+   * (manualMovesCount = 0, usedAI = false, lastMovedPieceId = null).
    */
   const loadLevel = useCallback((level) => {
     if (!level || !isValidBoardState(level.pieces)) return;
@@ -108,6 +155,16 @@ export function useKlotski({
     setIsPlaying(false);
     isRouteDirtyRef.current = false;
     setIsRouteDirty(false);
+
+    manualMovesCountRef.current = 0;
+    setManualMovesCount(0);
+    usedAIRef.current = false;
+    setUsedAI(false);
+    lastMovedPieceIdRef.current = null;
+    setLastMovedPieceId(null);
+    victoryRecordedRef.current = false;
+    setIsNewRecord(false);
+
     setCurrentLevel(level);
     setHistory([level.pieces]);
     setCurrentStepIndex(0);
@@ -121,6 +178,7 @@ export function useKlotski({
         result.isSolvable &&
         result.history.every((state) => isValidBoardState(state))
       ) {
+        initialLevelSolutionRef.current = result;
         setHistory(result.history);
         setMoves(result.moves);
         setSolveTime(result.timeMs);
@@ -136,15 +194,18 @@ export function useKlotski({
    * Mueve una pieza manualmente arrastrada por el usuario:
    * 1. Verifica el bounding-box completo (h x w) y el trayecto con canMovePieceTo.
    * 2. Verifica la guardia anti-superposición (isValidBoardState: 0 colisiones, 2 huecos).
-   * 3. Marca la ruta previa del solver como obsoleta (isRouteDirty = true) para forzar
-   *    recálculo automático si luego se presiona Reproducir o Siguiente.
+   * 3. Contabiliza movimientos equivalentes al BFS: si mueve una pieza distinta a
+   *    lastMovedPieceId suma +1; si mueve la misma pieza consecutivamente lo agrupa.
+   * 4. Marca la ruta previa del solver como obsoleta (isRouteDirty = true).
    */
   const movePieceManually = useCallback(
     (pieceId, newR, newC) => {
       setIsPlaying(false);
 
       const activeState =
-        currentPiecesRef.current || history[currentStepIndex] || currentLevel.pieces;
+        currentPiecesRef.current ||
+        history[currentStepIndex] ||
+        currentLevel.pieces;
       const piece = activeState[pieceId];
       if (!piece) return;
 
@@ -165,6 +226,15 @@ export function useKlotski({
 
       if (!isValidBoardState(nextState)) {
         return;
+      }
+
+      // Contabilización justa de movimientos manuales (agrupa deslizamientos continuos de la misma pieza)
+      if (pieceId !== lastMovedPieceIdRef.current) {
+        const nextCount = manualMovesCountRef.current + 1;
+        manualMovesCountRef.current = nextCount;
+        setManualMovesCount(nextCount);
+        lastMovedPieceIdRef.current = pieceId;
+        setLastMovedPieceId(pieceId);
       }
 
       const dr = newR - piece.r;
@@ -203,12 +273,13 @@ export function useKlotski({
   );
 
   /**
-   * Navegación al siguiente paso.
+   * Navegación al siguiente paso del Solver (marca inmediatamente usedAI = true).
    * Si el tablero fue modificado manualmente (isRouteDirty), recalcula primero
    * la solución óptima con BFS desde la posición actual y avanza el primer paso.
    */
   const nextStep = useCallback(() => {
     setIsPlaying(false);
+    markAIUsed();
 
     if (isRouteDirtyRef.current) {
       const startPieces = currentPiecesRef.current;
@@ -242,13 +313,15 @@ export function useKlotski({
       }
       return prev;
     });
-  }, [history]);
+  }, [history, markAIUsed]);
 
   /**
-   * Navegación al paso anterior
+   * Navegación al paso anterior del Solver (marca usedAI = true)
    */
   const prevStep = useCallback(() => {
     setIsPlaying(false);
+    markAIUsed();
+
     setCurrentStepIndex((prev) => {
       if (prev > 0) {
         const candidate = history[prev - 1];
@@ -258,13 +331,15 @@ export function useKlotski({
       }
       return 0;
     });
-  }, [history]);
+  }, [history, markAIUsed]);
 
   /**
-   * Ir a un paso específico
+   * Ir a un paso específico mediante el slider del Solver (marca usedAI = true)
    */
   const goToStep = useCallback(
     (index) => {
+      markAIUsed();
+
       const target = Math.max(0, Math.min(index, history.length - 1));
       const candidate = history[target];
       if (!isValidBoardState(candidate)) return;
@@ -275,34 +350,62 @@ export function useKlotski({
         setIsPlaying(false);
       }
     },
-    [history]
+    [history, markAIUsed]
   );
 
   /**
-   * Reiniciar al paso 0 de la solución actual
+   * Reinicio Limpio (reset):
+   * 1. El tablero vuelve exactamente a la posición inicial del nivel (paso 0).
+   * 2. manualMovesCount vuelve a 0 y lastMovedPieceId a null.
+   * 3. usedAI se restablece a false, habilitando un nuevo intento válido para guardar récord.
    */
   const reset = useCallback(() => {
     setIsPlaying(false);
-    if (history[0] && isValidBoardState(history[0])) {
-      currentPiecesRef.current = history[0];
+    isRouteDirtyRef.current = false;
+    setIsRouteDirty(false);
+
+    manualMovesCountRef.current = 0;
+    setManualMovesCount(0);
+    usedAIRef.current = false;
+    setUsedAI(false);
+    lastMovedPieceIdRef.current = null;
+    setLastMovedPieceId(null);
+    victoryRecordedRef.current = false;
+    setIsNewRecord(false);
+
+    const cached = initialLevelSolutionRef.current;
+    if (
+      cached &&
+      cached.isSolvable &&
+      cached.history?.length > 0 &&
+      isValidBoardState(cached.history[0])
+    ) {
+      setHistory(cached.history);
+      setMoves(cached.moves);
+      setSolveTime(cached.timeMs);
+      setTotalStatesExplored(cached.totalStatesExplored);
+      setCurrentStepIndex(0);
+      currentPiecesRef.current = cached.history[0];
+    } else {
+      loadLevel(currentLevel);
     }
-    setCurrentStepIndex(0);
-  }, [history]);
+  }, [currentLevel, loadLevel]);
 
   /**
-   * Reiniciar el tablero al estado inicial original del nivel activo
+   * Alias de reinicio limpio al estado inicial original del nivel activo
    */
   const resetToInitial = useCallback(() => {
-    setIsPlaying(false);
-    loadLevel(currentLevel);
-  }, [loadLevel, currentLevel]);
+    reset();
+  }, [reset]);
 
   /**
-   * Iniciar reproducción automática.
+   * Iniciar reproducción automática (marca inmediatamente usedAI = true).
    * Si el usuario movió piezas manualmente (isRouteDirty), recalcula primero
    * la ruta óptima desde el estado actual antes de iniciar el autoplay.
    */
   const play = useCallback(() => {
+    markAIUsed();
+
     if (isRouteDirtyRef.current || moves.length === 0) {
       const startPieces = currentPiecesRef.current;
       if (!isValidBoardState(startPieces)) return;
@@ -337,7 +440,7 @@ export function useKlotski({
     });
 
     setIsPlaying(true);
-  }, [moves.length, history]);
+  }, [moves.length, history, markAIUsed]);
 
   /**
    * Pausar reproducción automática
@@ -405,6 +508,10 @@ export function useKlotski({
       ? moves[currentStepIndex - 1]
       : null;
 
+  const currentLevelProgress = currentLevel?.id
+    ? progress[currentLevel.id] || null
+    : null;
+
   return {
     // Estados
     currentLevel,
@@ -418,6 +525,14 @@ export function useKlotski({
     isCompleted,
     solveTime,
     totalStatesExplored,
+
+    // Estados de partida manual, anti-IA y progreso
+    manualMovesCount,
+    usedAI,
+    lastMovedPieceId,
+    progress,
+    currentLevelProgress,
+    isNewRecord,
 
     // Helpers derivados
     currentPieces,

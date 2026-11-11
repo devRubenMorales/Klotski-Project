@@ -4,20 +4,24 @@
  * y el indicador de dificultad blanco exacto (puntos, medios puntos, barras dobles o barra completa).
  *
  * @param {Object} props
- * @param {Object} props.level - Datos del nivel { id, name, difficulty, minSteps, pieces }
+ * @param {Object} props.level - Datos del nivel { id, name, difficulty, minSteps, optimalMoves, pieces }
  * @param {boolean} [props.isActive=false] - Si este nivel es el activo actualmente
+ * @param {Object|null} [props.progressData=null] - Progreso guardado del nivel { completed, bestMoves }
  * @param {Function} [props.onClick] - Callback al seleccionar la tarjeta
  * @param {boolean} [props.horizontal=false] - Modo horizontal para el cartucho de la consola
  */
 export default function ChallengeCard({
   level,
   isActive = false,
+  progressData = null,
   onClick,
   horizontal = false,
 }) {
   if (!level) return null;
   const { name, difficulty, minSteps, optimalMoves, pieces } = level;
   const stepsCount = optimalMoves ?? minSteps;
+  const isCompleted = Boolean(progressData?.completed);
+  const bestMoves = progressData?.bestMoves;
 
   if (horizontal) {
     // Modo Cartucho Horizontal para la ranura superior izquierda de la consola
@@ -86,17 +90,33 @@ export default function ChallengeCard({
       onClick={onClick}
       role="button"
       tabIndex={0}
-      title={`${name} (${stepsCount} pasos)`}
+      title={
+        isCompleted
+          ? `${name} (${stepsCount} pasos óptimos — Resuelto en ${bestMoves} pasos)`
+          : `${name} (${stepsCount} pasos)`
+      }
       className={`group relative select-none rounded-xl bg-zinc-950 border p-1 transition-all duration-200 cursor-pointer w-full flex flex-col items-center gap-0.5 ${
         isActive
           ? 'border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.5)] ring-1 ring-cyan-400/50'
+          : isCompleted
+          ? 'border-emerald-500/60 hover:border-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.18)] hover:scale-[1.02]'
           : 'border-zinc-800 hover:border-cyan-400/70 hover:shadow-[0_0_8px_rgba(6,182,212,0.3)] hover:scale-[1.02]'
       }`}
     >
+      {/* Badge de Nivel Resuelto en la esquina superior derecha */}
+      {isCompleted && (
+        <span
+          title={`Resuelto en ${bestMoves} pasos`}
+          className="absolute top-1 right-1 z-10 w-3.5 h-3.5 rounded-full bg-emerald-500/95 text-zinc-950 font-bold text-[8px] flex items-center justify-center shadow-[0_0_6px_rgba(16,185,129,0.75)] leading-none"
+        >
+          ✓
+        </span>
+      )}
+
       {/* Contenedor del Mini-Tablero 5x4 con piezas unificadas */}
       <div
         className="rounded bg-zinc-900 border border-zinc-800 relative overflow-hidden shadow-inner shrink-0"
-        style={{ width: '40px', height: '50px' }}
+        style={{ width: '38px', height: '46px' }}
       >
         {pieces &&
           Object.values(pieces).map((piece) => (
@@ -133,18 +153,23 @@ export default function ChallengeCard({
       </div>
 
       {/* Indicador de Dificultad (Puntos blancos, medios puntos o barras) */}
-      <div className="flex items-center justify-center gap-1 w-full min-h-[8px]">
+      <div className="flex items-center justify-center gap-1 w-full min-h-[7px]">
         {renderDifficulty(difficulty, false)}
       </div>
 
-      {/* Etiqueta del Desafío */}
+      {/* Etiqueta del Desafío y Récord Resuelto */}
       <div className="w-full text-center leading-tight">
-        <div className="text-[9px] font-mono font-semibold text-zinc-300 truncate">
+        <div className="text-[8.5px] font-mono font-semibold text-zinc-300 truncate">
           {name}
         </div>
-        <div className="text-[8px] font-mono text-cyan-400 font-medium">
+        <div className="text-[7.5px] font-mono text-cyan-400 font-medium">
           {stepsCount} pasos
         </div>
+        {isCompleted && typeof bestMoves === 'number' && (
+          <div className="text-[7px] font-mono font-semibold text-emerald-400 truncate">
+            ✓ Resuelto: {bestMoves} pasos
+          </div>
+        )}
       </div>
     </div>
   );

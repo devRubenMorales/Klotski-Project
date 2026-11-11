@@ -17,6 +17,11 @@ export default function App() {
     isCompleted,
     solveTime,
     totalStatesExplored,
+    manualMovesCount,
+    usedAI,
+    progress,
+    currentLevelProgress,
+    isNewRecord,
     currentMove,
     currentPieces,
     currentGrid,
@@ -41,8 +46,6 @@ export default function App() {
   const [isLeftExtOpen, setIsLeftExtOpen] = useState(false);
   const [isRightDrawerOpen, setIsRightDrawerOpen] = useState(false);
   const [isRightExtOpen, setIsRightExtOpen] = useState(false);
-
-  const activeLevel = currentLevel as any;
 
   // Cerrar todas las gavetas (usado al tocar fuera o seleccionar nivel en móvil)
   const handleCloseAllDrawers = useCallback(() => {
@@ -173,16 +176,35 @@ export default function App() {
 
       {/* Banner flotante de Victoria (absoluto para no desplazar el tablero) */}
       {isCompleted && (
-        <div className="absolute top-2.5 z-50 animate-bounce pointer-events-none px-3">
-          <div className="px-4 sm:px-5 py-1.5 sm:py-2 bg-gradient-to-r from-emerald-500/95 via-teal-500/95 to-cyan-500/95 text-zinc-950 font-mono font-bold text-xs sm:text-sm rounded-full shadow-[0_0_25px_rgba(16,185,129,0.7)] border-2 border-white/70 flex items-center gap-2">
-            <span className="text-base sm:text-lg">🏆</span>
-            <span>
-              {totalSteps > 0
-                ? `¡${activeLevel?.name || 'Reto'} Resuelto en ${totalSteps} pasos!`
-                : '¡Victoria! Has llevado el Bloque Rojo a la salida.'}
-            </span>
-            <span className="text-base sm:text-lg">✨</span>
-          </div>
+        <div className="absolute top-2.5 z-50 px-3 max-w-full">
+          {!usedAI ? (
+            <div className="animate-bounce px-4 sm:px-5 py-1.5 sm:py-2 bg-gradient-to-r from-emerald-500/95 via-teal-500/95 to-cyan-500/95 text-zinc-950 font-mono font-bold text-xs sm:text-sm rounded-full shadow-[0_0_25px_rgba(16,185,129,0.7)] border-2 border-white/70 flex items-center gap-2 flex-wrap justify-center">
+              <span className="text-base sm:text-lg">🏆</span>
+              <span>
+                ¡Nivel Completado en {manualMovesCount} pasos!
+              </span>
+              {isNewRecord && (
+                <span className="px-2 py-0.5 rounded-full bg-zinc-950 text-emerald-300 text-[10px] sm:text-xs font-extrabold tracking-wider border border-emerald-300/60 shadow-sm">
+                  ¡NUEVO RÉCORD!
+                </span>
+              )}
+              <span className="text-base sm:text-lg">✨</span>
+            </div>
+          ) : (
+            <div className="px-3.5 sm:px-5 py-1.5 sm:py-2 bg-zinc-900/95 text-amber-300 font-mono font-semibold text-[11px] sm:text-xs rounded-2xl sm:rounded-full shadow-[0_0_25px_rgba(245,158,11,0.35)] border border-amber-500/60 flex items-center gap-2.5 flex-wrap justify-center text-center">
+              <span className="text-sm sm:text-base">🤖</span>
+              <span>
+                Resuelto con IA en {currentStepIndex} pasos — Reinicia el nivel y resuélvelo sin ayuda para guardar tu progreso
+              </span>
+              <button
+                type="button"
+                onClick={reset}
+                className="px-2.5 py-0.5 rounded-full bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-[10px] sm:text-xs cursor-pointer transition-colors shadow-sm"
+              >
+                Reiniciar
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -233,6 +255,7 @@ export default function App() {
           <SideDrawers
             levels={LEVELS}
             currentLevel={currentLevel}
+            progress={progress}
             onSelectLevel={(lvl: any) => {
               loadLevel(lvl);
               if (typeof window !== 'undefined' && window.innerWidth < 768) {
@@ -257,6 +280,11 @@ export default function App() {
             onMovePiece={movePieceManually}
             onDragStart={pause}
             currentLevel={currentLevel}
+            manualMovesCount={manualMovesCount}
+            usedAI={usedAI}
+            currentStepIndex={currentStepIndex}
+            levelProgress={currentLevelProgress}
+            onReset={reset}
             isLeftDrawerOpen={isLeftDrawerOpen}
             isRightDrawerOpen={isRightDrawerOpen}
             onToggleLeft={handleToggleLeft}
