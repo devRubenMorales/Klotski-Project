@@ -7,6 +7,7 @@
 export default function Controls({
   currentStepIndex,
   totalSteps,
+  isRouteDirty = false,
   isSolving,
   isPlaying,
   playbackSpeed,
@@ -266,7 +267,7 @@ export default function Controls({
         {/* Reproducir / Pausar (Botón Central Destacado) */}
         <button
           onClick={togglePlay}
-          disabled={totalSteps === 0}
+          disabled={isSolving || isCompleted || (!isRouteDirty && totalSteps === 0)}
           title={isPlaying ? 'Pausar' : 'Reproducir automáticamente solución'}
           className={`flex-1 py-2.5 md:py-3 px-4 md:px-5 font-mono font-bold text-xs md:text-sm rounded-xl transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed shadow-md ${
             isPlaying
@@ -294,7 +295,11 @@ export default function Controls({
         {/* Paso Siguiente */}
         <button
           onClick={nextStep}
-          disabled={currentStepIndex === totalSteps || totalSteps === 0}
+          disabled={
+            isSolving ||
+            isCompleted ||
+            (!isRouteDirty && (currentStepIndex === totalSteps || totalSteps === 0))
+          }
           title="Paso siguiente"
           className="p-2.5 md:p-3 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 disabled:hover:bg-zinc-800 text-zinc-200 rounded-xl transition-all cursor-pointer disabled:cursor-not-allowed border border-zinc-700 shadow-sm"
         >

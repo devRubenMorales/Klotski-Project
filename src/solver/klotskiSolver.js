@@ -9,10 +9,15 @@ import { ROWS, COLS, INITIAL_PIECES, GOAL_POSITION, DIRECTIONS } from './constan
  */
 export function createGrid(pieces) {
   const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+  if (!pieces) return grid;
   for (const p of Object.values(pieces)) {
     for (let dr = 0; dr < p.h; dr++) {
       for (let dc = 0; dc < p.w; dc++) {
-        grid[p.r + dr][p.c + dc] = p.id;
+        const ir = p.r + dr;
+        const ic = p.c + dc;
+        if (ir >= 0 && ir < ROWS && ic >= 0 && ic < COLS) {
+          grid[ir][ic] = p.id;
+        }
       }
     }
   }
@@ -20,8 +25,132 @@ export function createGrid(pieces) {
 }
 
 /**
+ * Guardia anti-superposición: proyecta todas las piezas en una grilla 5x4
+ * y verifica que:
+ * 1. Ninguna pieza exceda los límites [0..4, 0..3].
+ * 2. Ninguna celda esté ocupada por más de 1 pieza.
+ * 3. Existan exactamente 2 casillas vacías (suma de áreas = 18).
+ *
+ * @param {Record<string, { id: string, r: number, c: number, h: number, w: number }>} pieces
+ * @returns {boolean}
+ */
+export function isValidBoardState(pieces) {
+  if (!pieces || typeof pieces !== 'object') return false;
+
+  const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+  let occupiedCount = 0;
+
+  for (const p of Object.values(pieces)) {
+    if (
+      !p ||
+      typeof p.r !== 'number' ||
+      typeof p.c !== 'number' ||
+      typeof p.h !== 'number' ||
+      typeof p.w !== 'number'
+    ) {
+      return false;
+    }
+
+    if (p.r < 0 || p.c < 0 || p.r + p.h > ROWS || p.c + p.w > COLS) {
+      return false;
+    }
+
+    for (let ir = p.r; ir < p.r + p.h; ir++) {
+      for (let ic = p.c; ic < p.c + p.w; ic++) {
+        if (grid[ir][ic] !== null) {
+          // Superposición detectada
+          return false;
+        }
+        grid[ir][ic] = p.id;
+        occupiedCount++;
+      }
+    }
+  }
+
+  const emptyCount = ROWS * COLS - occupiedCount;
+  return emptyCount === 2;
+}
+
+/**
+ * Verifica el bounding-box completo (h x w) de una pieza en una posición destino (nextR, nextC).
+ * Comprueba límites del tablero y que todas las celdas [nextR..nextR+h-1, nextC..nextC+w-1]
+ * estén libres (null) o pertenezcan a la misma pieza (pieceId).
+ *
+ * @param {(string|null)[][]} grid
+ * @param {string} pieceId
+ * @param {number} nextR
+ * @param {number} nextC
+ * @param {number} h
+ * @param {number} w
+ * @returns {boolean}
+ */
+export function isPlacementFree(grid, pieceId, nextR, nextC, h, w) {
+  if (!grid) return false;
+  if (nextR < 0 || nextC < 0 || nextR + h > ROWS || nextC + w > COLS) {
+    return false;
+  }
+
+  for (let ir = nextR; ir < nextR + h; ir++) {
+    for (let ic = nextC; ic < nextC + w; ic++) {
+      const cell = grid[ir]?.[ic];
+      if (cell !== null && cell !== pieceId) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Valida si una pieza puede desplazarse ortogonalmente desde su posición actual
+ * hasta (targetR, targetC), verificando cada paso intermedio con su bounding-box
+ * completo (h x w) y garantizando que el estado resultante cumpla la guardia anti-superposición.
+ *
+ * @param {Record<string, any>} pieces
+ * @param {string} pieceId
+ * @param {number} targetR
+ * @param {number} targetC
+ * @returns {boolean}
+ */
+export function canMovePieceTo(pieces, pieceId, targetR, targetC) {
+  if (!pieces || !pieces[pieceId]) return false;
+  const piece = pieces[pieceId];
+  const { r, c, h, w } = piece;
+
+  const dr = targetR - r;
+  const dc = targetC - c;
+
+  // Debe ser un movimiento estrictamente ortogonal de 1 o 2 casillas
+  if (dr !== 0 && dc !== 0) return false;
+  const steps = Math.abs(dr) + Math.abs(dc);
+  if (steps < 1 || steps > 2) return false;
+
+  const stepR = Math.sign(dr);
+  const stepC = Math.sign(dc);
+  const grid = createGrid(pieces);
+
+  // Verificar el bounding-box completo (h x w) en cada paso del trayecto
+  for (let s = 1; s <= steps; s++) {
+    const checkR = r + stepR * s;
+    const checkC = c + stepC * s;
+    if (!isPlacementFree(grid, pieceId, checkR, checkC, h, w)) {
+      return false;
+    }
+  }
+
+  // Verificar estado final con la guardia anti-superposición
+  const nextState = {
+    ...pieces,
+    [pieceId]: { ...piece, r: targetR, c: targetC },
+  };
+  return isValidBoardState(nextState);
+}
+
+/**
  * Calcula en tiempo real las restricciones de desplazamiento ortogonal
- * para una pieza dada según la ocupación actual del tablero (5x4).
+ * para una pieza dada según la ocupación actual del tablero (5x4),
+ * evaluando el bounding-box completo (h x w) en cada dirección.
  *
  * @param {Object} piece - { id, r, c, h, w }
  * @param {(string|null)[][]} grid - Matriz actual del tablero
@@ -34,68 +163,40 @@ export function getPieceDragBounds(piece, grid) {
   let left = 0;
   let right = 0;
 
-  // ARRIBA
+  // ARRIBA (verifica bounding-box completo h x w)
   for (let step = 1; step <= 2; step++) {
-    const nr = r - step;
-    if (nr < 0) break;
-    let free = true;
-    for (let dc = 0; dc < w; dc++) {
-      const cell = grid[nr][c + dc];
-      if (cell !== null && cell !== id) {
-        free = false;
-        break;
-      }
+    if (isPlacementFree(grid, id, r - step, c, h, w)) {
+      up = step;
+    } else {
+      break;
     }
-    if (free) up = step;
-    else break;
   }
 
-  // ABAJO
+  // ABAJO (verifica bounding-box completo h x w)
   for (let step = 1; step <= 2; step++) {
-    const nr = r + h - 1 + step;
-    if (nr >= ROWS) break;
-    let free = true;
-    for (let dc = 0; dc < w; dc++) {
-      const cell = grid[nr][c + dc];
-      if (cell !== null && cell !== id) {
-        free = false;
-        break;
-      }
+    if (isPlacementFree(grid, id, r + step, c, h, w)) {
+      down = step;
+    } else {
+      break;
     }
-    if (free) down = step;
-    else break;
   }
 
-  // IZQUIERDA
+  // IZQUIERDA (verifica bounding-box completo h x w)
   for (let step = 1; step <= 2; step++) {
-    const nc = c - step;
-    if (nc < 0) break;
-    let free = true;
-    for (let dr = 0; dr < h; dr++) {
-      const cell = grid[r + dr][nc];
-      if (cell !== null && cell !== id) {
-        free = false;
-        break;
-      }
+    if (isPlacementFree(grid, id, r, c - step, h, w)) {
+      left = step;
+    } else {
+      break;
     }
-    if (free) left = step;
-    else break;
   }
 
-  // DERECHA
+  // DERECHA (verifica bounding-box completo h x w)
   for (let step = 1; step <= 2; step++) {
-    const nc = c + w - 1 + step;
-    if (nc >= COLS) break;
-    let free = true;
-    for (let dr = 0; dr < h; dr++) {
-      const cell = grid[r + dr][nc];
-      if (cell !== null && cell !== id) {
-        free = false;
-        break;
-      }
+    if (isPlacementFree(grid, id, r, c + step, h, w)) {
+      right = step;
+    } else {
+      break;
     }
-    if (free) right = step;
-    else break;
   }
 
   return { up, down, left, right };

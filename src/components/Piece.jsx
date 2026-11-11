@@ -1,9 +1,10 @@
-import { useState, useRef, useCallback } from 'react';
-import { getPieceDragBounds } from '../solver/klotskiSolver.js';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { getPieceDragBounds, isPlacementFree } from '../solver/klotskiSolver.js';
 
 /**
  * Componente Piece: representa una ficha física con soporte para arrastre táctil/mouse
- * (Pointer Events), bloqueo de eje y restricción de colisiones en tiempo real.
+ * (Pointer Events), bloqueo de eje, verificación completa de bounding-box (h x w)
+ * y cierre global seguro en window (pointerup / mouseup).
  *
  * @param {Object} props
  * @param {Object} props.piece - Datos de la pieza { id, type, r, c, h, w }
@@ -33,11 +34,116 @@ export default function Piece({
   const pointerIdRef = useRef(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const scaleRef = useRef(1);
+  const isDraggingRef = useRef(false);
 
   const baseLeft = c * cellSize;
   const baseTop = r * cellSize;
   const width = w * cellSize;
   const height = h * cellSize;
+
+  // Si la pieza cambia de coordenadas externas, limpiar cualquier offset residual
+  useEffect(() => {
+    isDraggingRef.current = false;
+    pointerIdRef.current = null;
+    lockedAxisRef.current = null;
+    dragOffsetRef.current = { x: 0, y: 0 };
+    setIsDragging(false);
+    setIsSnappingBack(false);
+    setDragOffset({ x: 0, y: 0 });
+  }, [r, c]);
+
+  /**
+   * Finaliza el arrastre, verifica el bounding-box completo (h x w) en la grilla 5x4
+   * y ejecuta el snap o regresa la pieza a su origen si hay colisión.
+   */
+  const finishDrag = useCallback(() => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+
+    // Recalcular límites sobre la grilla viva actual por seguridad
+    const liveBounds = grid
+      ? getPieceDragBounds(piece, grid)
+      : boundsRef.current;
+    const axis = lockedAxisRef.current;
+    const { x: offsetX, y: offsetY } = dragOffsetRef.current;
+
+    let deltaCol = 0;
+    let deltaRow = 0;
+
+    // Snap to Grid: umbral del 35% del tamaño de celda
+    if (axis === 'x') {
+      if (offsetX > 0 && liveBounds.right > 0) {
+        if (liveBounds.right >= 2 && offsetX >= 1.35 * cellSize) {
+          deltaCol = 2;
+        } else if (offsetX >= 0.35 * cellSize) {
+          deltaCol = 1;
+        }
+      } else if (offsetX < 0 && liveBounds.left > 0) {
+        if (liveBounds.left >= 2 && offsetX <= -1.35 * cellSize) {
+          deltaCol = -2;
+        } else if (offsetX <= -0.35 * cellSize) {
+          deltaCol = -1;
+        }
+      }
+    } else if (axis === 'y') {
+      if (offsetY > 0 && liveBounds.down > 0) {
+        if (liveBounds.down >= 2 && offsetY >= 1.35 * cellSize) {
+          deltaRow = 2;
+        } else if (offsetY >= 0.35 * cellSize) {
+          deltaRow = 1;
+        }
+      } else if (offsetY < 0 && liveBounds.up > 0) {
+        if (liveBounds.up >= 2 && offsetY <= -1.35 * cellSize) {
+          deltaRow = -2;
+        } else if (offsetY <= -0.35 * cellSize) {
+          deltaRow = -1;
+        }
+      }
+    }
+
+    // Verificación estricta de bounding-box (h x w) paso a paso antes de confirmar
+    let validTarget = false;
+    const targetR = r + deltaRow;
+    const targetC = c + deltaCol;
+
+    if ((deltaCol !== 0 || deltaRow !== 0) && grid) {
+      const steps = Math.max(Math.abs(deltaRow), Math.abs(deltaCol));
+      const stepR = Math.sign(deltaRow);
+      const stepC = Math.sign(deltaCol);
+      validTarget = true;
+
+      for (let s = 1; s <= steps; s++) {
+        const checkR = r + stepR * s;
+        const checkC = c + stepC * s;
+        if (!isPlacementFree(grid, id, checkR, checkC, h, w)) {
+          validTarget = false;
+          break;
+        }
+      }
+    }
+
+    lockedAxisRef.current = null;
+    pointerIdRef.current = null;
+
+    if (validTarget) {
+      setIsDragging(false);
+      setIsSnappingBack(false);
+      dragOffsetRef.current = { x: 0, y: 0 };
+      setDragOffset({ x: 0, y: 0 });
+      if (onMove) {
+        onMove(id, targetR, targetC);
+      }
+    } else {
+      // No superó el umbral o colisionó: regresar suavemente al origen
+      setIsSnappingBack(true);
+      dragOffsetRef.current = { x: 0, y: 0 };
+      setDragOffset({ x: 0, y: 0 });
+      setTimeout(() => {
+        setIsDragging(false);
+        setIsSnappingBack(false);
+      }, 200);
+    }
+  }, [grid, piece, cellSize, r, c, h, w, id, onMove]);
 
   /**
    * Inicio del arrastre (PointerDown)
@@ -51,6 +157,7 @@ export default function Piece({
       e.stopPropagation();
 
       pointerIdRef.current = e.pointerId;
+      isDraggingRef.current = true;
       try {
         e.currentTarget.setPointerCapture(e.pointerId);
       } catch (err) {
@@ -69,7 +176,7 @@ export default function Piece({
       lockedAxisRef.current = null;
       setIsSnappingBack(false);
 
-      // Calcular límites de movimiento permitidos según los espacios vacíos actuales
+      // Calcular límites de movimiento permitidos evaluando el bounding-box completo (h x w)
       const bounds = grid
         ? getPieceDragBounds(piece, grid)
         : { up: 0, down: 0, left: 0, right: 0 };
@@ -87,12 +194,15 @@ export default function Piece({
    */
   const handlePointerMove = useCallback(
     (e) => {
-      if (!isDragging || e.pointerId !== pointerIdRef.current) return;
+      if (!isDraggingRef.current || e.pointerId !== pointerIdRef.current) return;
 
       const scale = scaleRef.current || 1;
       const rawDx = (e.clientX - startPointerRef.current.x) / scale;
       const rawDy = (e.clientY - startPointerRef.current.y) / scale;
-      const bounds = boundsRef.current;
+      const bounds = grid
+        ? getPieceDragBounds(piece, grid)
+        : boundsRef.current;
+      boundsRef.current = bounds;
 
       // Bloqueo de eje con umbral inicial de 5px
       if (lockedAxisRef.current === null) {
@@ -119,7 +229,7 @@ export default function Piece({
 
       let newOffset = { x: 0, y: 0 };
 
-      // Restricción precisa según el eje bloqueado
+      // Restricción precisa según el eje bloqueado y los límites h x w
       if (lockedAxisRef.current === 'x') {
         const minX = -bounds.left * cellSize;
         const maxX = bounds.right * cellSize;
@@ -135,87 +245,48 @@ export default function Piece({
       dragOffsetRef.current = newOffset;
       setDragOffset(newOffset);
     },
-    [isDragging, cellSize]
+    [grid, piece, cellSize]
   );
 
   /**
-   * Finalización del arrastre (PointerUp / PointerCancel) y Snap to Grid
+   * Finalización del arrastre en el elemento (PointerUp / PointerCancel)
    */
   const handlePointerUp = useCallback(
     (e) => {
-      if (!isDragging || e.pointerId !== pointerIdRef.current) return;
-
+      if (!isDraggingRef.current) return;
       try {
-        e.currentTarget.releasePointerCapture(e.pointerId);
+        if (e.currentTarget && e.pointerId !== undefined) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
       } catch (err) {
         // Ignorar
       }
-
-      const bounds = boundsRef.current;
-      const axis = lockedAxisRef.current;
-      // Leer el offset síncrono más reciente desde la ref para evitar stale closure
-      const { x: offsetX, y: offsetY } = dragOffsetRef.current;
-
-      let deltaCol = 0;
-      let deltaRow = 0;
-
-      // Snap to Grid: umbral del 35% del tamaño de celda
-      if (axis === 'x') {
-        if (offsetX > 0 && bounds.right > 0) {
-          if (bounds.right >= 2 && offsetX >= 1.35 * cellSize) {
-            deltaCol = 2;
-          } else if (offsetX >= 0.35 * cellSize) {
-            deltaCol = 1;
-          }
-        } else if (offsetX < 0 && bounds.left > 0) {
-          if (bounds.left >= 2 && offsetX <= -1.35 * cellSize) {
-            deltaCol = -2;
-          } else if (offsetX <= -0.35 * cellSize) {
-            deltaCol = -1;
-          }
-        }
-      } else if (axis === 'y') {
-        if (offsetY > 0 && bounds.down > 0) {
-          if (bounds.down >= 2 && offsetY >= 1.35 * cellSize) {
-            deltaRow = 2;
-          } else if (offsetY >= 0.35 * cellSize) {
-            deltaRow = 1;
-          }
-        } else if (offsetY < 0 && bounds.up > 0) {
-          if (bounds.up >= 2 && offsetY <= -1.35 * cellSize) {
-            deltaRow = -2;
-          } else if (offsetY <= -0.35 * cellSize) {
-            deltaRow = -1;
-          }
-        }
-      }
-
-      if (deltaCol !== 0 || deltaRow !== 0) {
-        // Movimiento válido: ejecutar snap inmediato y notificar
-        const targetR = r + deltaRow;
-        const targetC = c + deltaCol;
-        setIsDragging(false);
-        dragOffsetRef.current = { x: 0, y: 0 };
-        setDragOffset({ x: 0, y: 0 });
-        if (onMove) {
-          onMove(id, targetR, targetC);
-        }
-      } else {
-        // No superó el umbral: animar de vuelta suavemente al origen
-        setIsSnappingBack(true);
-        dragOffsetRef.current = { x: 0, y: 0 };
-        setDragOffset({ x: 0, y: 0 });
-        setTimeout(() => {
-          setIsDragging(false);
-          setIsSnappingBack(false);
-        }, 200);
-      }
-
-      lockedAxisRef.current = null;
-      pointerIdRef.current = null;
+      finishDrag();
     },
-    [isDragging, cellSize, r, c, id, onMove]
+    [finishDrag]
   );
+
+  // Listeners globales en window (pointerup / mouseup / blur) para cerrar limpiamente
+  // incluso si el usuario suelta el botón del mouse fuera del tablero en PC
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleGlobalUp = () => {
+      finishDrag();
+    };
+
+    window.addEventListener('pointerup', handleGlobalUp);
+    window.addEventListener('pointercancel', handleGlobalUp);
+    window.addEventListener('mouseup', handleGlobalUp);
+    window.addEventListener('blur', handleGlobalUp);
+
+    return () => {
+      window.removeEventListener('pointerup', handleGlobalUp);
+      window.removeEventListener('pointercancel', handleGlobalUp);
+      window.removeEventListener('mouseup', handleGlobalUp);
+      window.removeEventListener('blur', handleGlobalUp);
+    };
+  }, [isDragging, finishDrag]);
 
   const currentX = baseLeft + dragOffset.x;
   const currentY = baseTop + dragOffset.y;

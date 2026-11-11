@@ -10,6 +10,7 @@ export default function App() {
     currentLevel,
     currentStepIndex,
     totalSteps,
+    isRouteDirty,
     isSolving,
     isPlaying,
     playbackSpeed,
@@ -62,10 +63,10 @@ export default function App() {
     setIsSolverMenuOpen(true);
 
     // Si el jugador realizó movimientos manuales previos, recalcula desde la posición actual
-    if (currentStepIndex > 0 || totalSteps === 0) {
+    if (isRouteDirty || currentStepIndex > 0 || totalSteps === 0) {
       solvePuzzle();
     }
-  }, [currentStepIndex, totalSteps, solvePuzzle]);
+  }, [isRouteDirty, currentStepIndex, totalSteps, solvePuzzle]);
 
   // Cerrar el menú de IA y devolver el tablero a su escala y centro normal
   const handleCloseSolverMenu = useCallback(() => {
@@ -284,6 +285,7 @@ export default function App() {
               totalSteps={totalSteps}
               isSolving={isSolving}
               isPlaying={isPlaying}
+              isRouteDirty={isRouteDirty}
               playbackSpeed={playbackSpeed}
               isCompleted={isCompleted}
               solveTime={solveTime}
