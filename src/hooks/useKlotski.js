@@ -454,6 +454,25 @@ export function useKlotski({
   }, [reset]);
 
   /**
+   * Salta directamente al primer reto pendiente (no completado) siguiendo
+   * la misma lógica de getInitialLevel(LEVELS).
+   */
+  const goToNextPendingLevel = useCallback(() => {
+    const candidate = getInitialLevel(LEVELS);
+    if (candidate && candidate.id !== currentLevel?.id) {
+      loadLevel(candidate);
+      return candidate;
+    }
+    const currIdx = LEVELS.findIndex((l) => l.id === currentLevel?.id);
+    const fallbackNext =
+      currIdx >= 0 ? LEVELS[(currIdx + 1) % LEVELS.length] : LEVELS[0];
+    if (fallbackNext) {
+      loadLevel(fallbackNext);
+    }
+    return fallbackNext;
+  }, [currentLevel?.id, loadLevel]);
+
+  /**
    * Iniciar reproducción automática (marca inmediatamente usedAI = true).
    * Si el usuario movió piezas manualmente (isRouteDirty), recalcula primero
    * la ruta óptima desde el estado actual antes de iniciar el autoplay.
@@ -606,6 +625,7 @@ export function useKlotski({
     goToStep,
     reset,
     resetToInitial,
+    goToNextPendingLevel,
     play,
     pause,
     togglePlay,

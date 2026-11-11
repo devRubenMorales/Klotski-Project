@@ -26,6 +26,7 @@ const CELL_SIZE = 72; // Tamaño estándar para 288px x 360px
  * @param {number} [props.completedLevelsCount=0] - Cantidad de niveles resueltos sin IA
  * @param {number} [props.totalLevelsCount=15] - Cantidad total de niveles
  * @param {Function} [props.onOpenAchievements] - Abrir el modal de Sala de Trofeos
+ * @param {Function} [props.onNextPendingLevel] - Saltar directamente al siguiente reto pendiente
  * @param {boolean} [props.isLeftDrawerOpen=false] - Estado gaveta izquierda
  * @param {boolean} [props.isRightDrawerOpen=false] - Estado gaveta derecha
  * @param {Function} [props.onToggleLeft] - Alternar gaveta izquierda
@@ -47,6 +48,7 @@ export default function Board({
   completedLevelsCount = 0,
   totalLevelsCount = 15,
   onOpenAchievements,
+  onNextPendingLevel,
   isLeftDrawerOpen = false,
   isRightDrawerOpen = false,
   onToggleLeft,
@@ -317,6 +319,19 @@ export default function Board({
                 onDragStart={onDragStart}
               />
             ))}
+
+          {/* Botón Rápido "Siguiente Reto Pendiente ➔" en el Tablero al ganar sin IA */}
+          {isCompleted && !usedAI && onNextPendingLevel && (
+            <div className="absolute bottom-3 inset-x-3 z-30 flex justify-center pointer-events-auto">
+              <button
+                type="button"
+                onClick={onNextPendingLevel}
+                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:via-teal-400 hover:to-cyan-400 active:scale-[0.98] text-zinc-950 font-mono font-extrabold text-xs tracking-wide shadow-[0_0_25px_rgba(16,185,129,0.85)] border-2 border-white/80 flex items-center justify-center gap-2 cursor-pointer transition-all"
+              >
+                <span>Siguiente Reto Pendiente ➔</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Indicador de compuerta inferior */}

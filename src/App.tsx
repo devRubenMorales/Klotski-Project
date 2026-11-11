@@ -38,6 +38,7 @@ export default function App() {
     goToStep,
     reset,
     resetToInitial,
+    goToNextPendingLevel,
     pause,
     togglePlay,
     setPlaybackSpeed,
@@ -234,6 +235,13 @@ export default function App() {
                 )
               )}
               <span className="text-base sm:text-lg">✨</span>
+              <button
+                type="button"
+                onClick={goToNextPendingLevel}
+                className="ml-1 px-3 py-0.5 rounded-full bg-zinc-950 hover:bg-zinc-900 active:scale-95 text-emerald-300 hover:text-cyan-300 font-mono font-extrabold text-[11px] sm:text-xs border border-emerald-300/70 shadow-md cursor-pointer transition-all flex items-center gap-1"
+              >
+                <span>Siguiente Reto Pendiente ➔</span>
+              </button>
             </div>
           ) : (
             <div className="px-3.5 sm:px-5 py-1.5 sm:py-2 bg-zinc-900/95 text-amber-300 font-mono font-semibold text-[11px] sm:text-xs rounded-2xl sm:rounded-full shadow-[0_0_25px_rgba(245,158,11,0.35)] border border-amber-500/60 flex items-center gap-2.5 flex-wrap justify-center text-center">
@@ -333,6 +341,7 @@ export default function App() {
             completedLevelsCount={achievementsSummary.completedCount}
             totalLevelsCount={achievementsSummary.totalLevels}
             onOpenAchievements={() => setIsAchievementsModalOpen(true)}
+            onNextPendingLevel={goToNextPendingLevel}
             isLeftDrawerOpen={isLeftDrawerOpen}
             isRightDrawerOpen={isRightDrawerOpen}
             onToggleLeft={handleToggleLeft}
