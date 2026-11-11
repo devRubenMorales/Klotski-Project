@@ -43,10 +43,22 @@ export default function App() {
 
   const activeLevel = currentLevel as any;
 
-  // Abrir el menú de IA: cierra únicamente las gavetas derechas si estuvieran abiertas
+  // Cerrar todas las gavetas (usado al tocar fuera o seleccionar nivel en móvil)
+  const handleCloseAllDrawers = useCallback(() => {
+    setIsLeftDrawerOpen(false);
+    setIsLeftExtOpen(false);
+    setIsRightDrawerOpen(false);
+    setIsRightExtOpen(false);
+  }, []);
+
+  // Abrir el menú de IA: cierra las gavetas derechas (y en móvil todas las gavetas superpuestas)
   const handleOpenSolverMenu = useCallback(() => {
     setIsRightDrawerOpen(false);
     setIsRightExtOpen(false);
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setIsLeftDrawerOpen(false);
+      setIsLeftExtOpen(false);
+    }
     setIsSolverMenuOpen(true);
 
     // Si el jugador realizó movimientos manuales previos, recalcula desde la posición actual
@@ -55,7 +67,7 @@ export default function App() {
     }
   }, [currentStepIndex, totalSteps, solvePuzzle]);
 
-  // Cerrar el menú de IA y devolver el tablero al centro
+  // Cerrar el menú de IA y devolver el tablero a su escala y centro normal
   const handleCloseSolverMenu = useCallback(() => {
     pause();
     setIsSolverMenuOpen(false);
@@ -64,10 +76,16 @@ export default function App() {
   // Abrir/cerrar gaveta izquierda (NO cierra el menú de reproducción IA)
   const handleToggleLeft = () => {
     setIsLeftDrawerOpen((prev) => {
-      if (prev) {
+      const next = !prev;
+      if (next) {
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+          setIsRightDrawerOpen(false);
+          setIsRightExtOpen(false);
+        }
+      } else {
         setIsLeftExtOpen(false);
       }
-      return !prev;
+      return next;
     });
   };
 
@@ -78,6 +96,10 @@ export default function App() {
       if (next) {
         setIsSolverMenuOpen(false);
         pause();
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+          setIsLeftDrawerOpen(false);
+          setIsLeftExtOpen(false);
+        }
       } else {
         setIsRightExtOpen(false);
       }
@@ -93,7 +115,7 @@ export default function App() {
     setIsRightExtOpen((prev) => !prev);
   };
 
-  // Atajos de teclado: Escape para cerrar el menú, Flechas para navegar, Espacio para reproducir/pausar, R para reiniciar
+  // Atajos de teclado: Escape para cerrar el menú/gavetas, Flechas para navegar, Espacio para reproducir/pausar, R para reiniciar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
@@ -104,6 +126,9 @@ export default function App() {
         if (isSolverMenuOpen) {
           e.preventDefault();
           handleCloseSolverMenu();
+        } else if (isLeftDrawerOpen || isRightDrawerOpen) {
+          e.preventDefault();
+          handleCloseAllDrawers();
         }
         return;
       }
@@ -127,45 +152,62 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSolverMenuOpen, handleCloseSolverMenu, nextStep, prevStep, togglePlay, reset]);
+  }, [
+    isSolverMenuOpen,
+    isLeftDrawerOpen,
+    isRightDrawerOpen,
+    handleCloseSolverMenu,
+    handleCloseAllDrawers,
+    nextStep,
+    prevStep,
+    togglePlay,
+    reset,
+  ]);
 
   return (
-    <main className="h-screen max-h-screen w-screen max-w-full overflow-hidden select-none flex items-center justify-center bg-zinc-950 p-2 sm:p-4 relative">
+    <main className="h-[100dvh] max-h-[100dvh] w-screen max-w-full overflow-hidden select-none flex items-center justify-center bg-zinc-950 px-4 py-2 relative">
       {/* Resplandores ambientales de fondo */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-cyan-600/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Banner flotante de Victoria (absoluto para no desplazar el tablero) */}
       {isCompleted && (
-        <div className="absolute top-3 z-50 animate-bounce pointer-events-none">
-          <div className="px-5 py-2 bg-gradient-to-r from-emerald-500/90 via-teal-500/90 to-cyan-500/90 text-zinc-950 font-mono font-bold text-xs sm:text-sm rounded-full shadow-[0_0_25px_rgba(16,185,129,0.7)] border-2 border-white/70 flex items-center gap-2">
-            <span className="text-lg">🏆</span>
+        <div className="absolute top-2.5 z-50 animate-bounce pointer-events-none px-3">
+          <div className="px-4 sm:px-5 py-1.5 sm:py-2 bg-gradient-to-r from-emerald-500/95 via-teal-500/95 to-cyan-500/95 text-zinc-950 font-mono font-bold text-xs sm:text-sm rounded-full shadow-[0_0_25px_rgba(16,185,129,0.7)] border-2 border-white/70 flex items-center gap-2">
+            <span className="text-base sm:text-lg">🏆</span>
             <span>
               {totalSteps > 0
                 ? `¡${activeLevel?.name || 'Reto'} Resuelto en ${totalSteps} pasos!`
                 : '¡Victoria! Has llevado el Bloque Rojo a la salida.'}
             </span>
-            <span className="text-lg">✨</span>
+            <span className="text-base sm:text-lg">✨</span>
           </div>
         </div>
       )}
 
-      {/* Contenedor Principal: Tablero siempre centrado verticalmente */}
+      {/* Contenedor Principal: En Desktop alinea Tablero + Solver horizontalmente; en Móvil centra el Tablero y fija el Solver abajo */}
       <div
-        className={`z-10 w-full max-w-6xl flex items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isSolverMenuOpen ? 'gap-6 lg:gap-12' : 'gap-0'
-          }`}
+        className={`z-10 w-full max-w-6xl flex flex-col md:flex-row items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isSolverMenuOpen ? 'md:gap-6 lg:gap-12' : 'gap-0'
+        }`}
       >
         {/* Consola Física con Gavetas Telescópicas Dobles */}
         <section
           aria-label="Tablero Klotski con gavetas telescópicas"
-          className="relative flex flex-col items-center shrink-0 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+          className={`relative flex flex-col items-center shrink-0 transition-transform duration-300 ease-out ${
+            isSolverMenuOpen
+              ? 'max-md:scale-[0.78] max-md:origin-top max-md:-mt-2 max-md:-translate-y-16 md:scale-100 md:translate-y-0'
+              : 'max-md:scale-[0.9] sm:scale-100 translate-y-0'
+          }`}
         >
           {/* Botón Superior para Abrir Asistencia IA (desaparece suavemente al abrir el menú) */}
           <div
-            className={`absolute -top-14 left-1/2 -translate-x-1/2 z-30 w-[288px] transition-all duration-300 ease-out ${isSolverMenuOpen
-                ? 'opacity-0 -translate-y-2 scale-95 pointer-events-none'
-                : 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
-              }`}
+            className={`absolute -top-13 md:-top-14 left-1/2 -translate-x-1/2 z-30 w-[288px] transition-all duration-300 ease-out ${
+              isSolverMenuOpen
+                ? 'opacity-0 -translate-y-2 scale-95 pointer-events-none invisible'
+                : 'opacity-100 translate-y-0 scale-100 pointer-events-auto visible'
+            }`}
+            style={{ top: '-52px' }}
           >
             <button
               onClick={handleOpenSolverMenu}
@@ -185,7 +227,7 @@ export default function App() {
                   d="M13 10V3L4 14h7v7l9-11h-7z"
                 />
               </svg>
-              <span>Resolver con IA</span>
+              <span>Resolver con IA / Obtener Ayuda</span>
             </button>
           </div>
 
@@ -195,6 +237,9 @@ export default function App() {
             currentLevel={currentLevel}
             onSelectLevel={(lvl: any) => {
               loadLevel(lvl);
+              if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                handleCloseAllDrawers();
+              }
             }}
             isLeftOpen={isLeftDrawerOpen}
             isLeftExtOpen={isLeftExtOpen}
@@ -202,6 +247,7 @@ export default function App() {
             isRightExtOpen={isRightExtOpen}
             onToggleLeftExt={handleToggleLeftExt}
             onToggleRightExt={handleToggleRightExt}
+            onCloseAll={handleCloseAllDrawers}
           />
 
           {/* Tablero Principal con Cartucho Activo y Pestañas Laterales */}
@@ -220,19 +266,23 @@ export default function App() {
           />
         </section>
 
-        {/* Panel de Mandos Cyber-Gamer: sale desplazado hacia la derecha y centra el conjunto */}
+        {/* Panel de Mandos Cyber-Gamer:
+            - En Desktop (md:): sale desplazado hacia la derecha y centra el conjunto.
+            - En Móvil (< 768px): Bottom Bar compacta fija en la parte inferior de la pantalla. */}
         <section
           aria-label="Controles del Solver"
-          className={`shrink-0 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isSolverMenuOpen
-              ? 'w-[340px] sm:w-[448px] max-w-md opacity-100 pointer-events-auto'
-              : 'w-0 max-w-0 opacity-0 pointer-events-none overflow-hidden'
-            }`}
+          className={`shrink-0 max-md:fixed max-md:bottom-0 max-md:inset-x-0 max-md:z-40 max-md:px-2.5 max-md:pb-2.5 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            isSolverMenuOpen
+              ? 'max-md:translate-y-0 max-md:opacity-100 max-md:pointer-events-auto max-md:visible md:w-[400px] lg:w-[448px] md:max-w-md md:opacity-100 md:pointer-events-auto md:visible'
+              : 'max-md:translate-y-full max-md:opacity-0 max-md:pointer-events-none max-md:invisible md:w-0 md:max-w-0 md:opacity-0 md:pointer-events-none md:invisible md:overflow-hidden'
+          }`}
         >
           <div
-            className={`w-[340px] sm:w-[448px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isSolverMenuOpen
-                ? 'translate-x-0 scale-100 opacity-100'
-                : '-translate-x-16 scale-95 opacity-0'
-              }`}
+            className={`w-full md:w-[400px] lg:w-[448px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              isSolverMenuOpen
+                ? 'md:translate-x-0 md:scale-100 opacity-100'
+                : 'md:-translate-x-16 md:scale-95 opacity-0'
+            }`}
           >
             <Controls
               currentStepIndex={currentStepIndex}
@@ -255,8 +305,8 @@ export default function App() {
               onClose={handleCloseSolverMenu}
             />
 
-            {/* Guía de atajos de teclado y ayuda */}
-            <div className="mt-3 flex flex-col items-center gap-1 text-[11px] font-mono text-zinc-500">
+            {/* Guía de atajos de teclado (Solo Desktop) */}
+            <div className="hidden md:flex mt-3 flex-col items-center gap-1 text-[11px] font-mono text-zinc-500">
               <div className="flex items-center justify-center gap-3 flex-wrap">
                 <span><kbd className="px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-400">Espacio</kbd> Play/Pausa</span>
                 <span><kbd className="px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-400">←</kbd> <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-400">→</kbd> Pasos</span>

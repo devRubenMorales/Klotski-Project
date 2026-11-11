@@ -48,7 +48,7 @@ export default function Board({
           <button
             onClick={onToggleLeft}
             title={isLeftDrawerOpen ? 'Cerrar gaveta izquierda' : 'Abrir gaveta izquierda'}
-            className="absolute -left-3.5 top-1/2 -translate-y-1/2 w-4 h-16 rounded-l-lg bg-zinc-800 hover:bg-zinc-700 border-l border-y border-zinc-700 hover:border-zinc-500 text-zinc-400 hover:text-zinc-100 flex items-center justify-center cursor-pointer shadow-xl transition-all duration-200 z-30 group"
+            className="absolute -left-4 md:-left-3.5 top-1/2 -translate-y-1/2 w-5 md:w-4 h-16 rounded-l-lg bg-zinc-800 hover:bg-zinc-700 border-l border-y border-zinc-700 hover:border-zinc-500 text-zinc-400 hover:text-zinc-100 flex items-center justify-center cursor-pointer shadow-xl transition-all duration-200 z-50 group"
           >
             <svg
               className="w-2.5 h-2.5 group-hover:scale-125 transition-transform"
@@ -73,7 +73,7 @@ export default function Board({
           <button
             onClick={onToggleRight}
             title={isRightDrawerOpen ? 'Cerrar gaveta derecha' : 'Abrir gaveta derecha'}
-            className="absolute -right-3.5 top-1/2 -translate-y-1/2 w-4 h-16 rounded-r-lg bg-zinc-800 hover:bg-zinc-700 border-r border-y border-zinc-700 hover:border-zinc-500 text-zinc-400 hover:text-zinc-100 flex items-center justify-center cursor-pointer shadow-xl transition-all duration-200 z-30 group"
+            className="absolute -right-4 md:-right-3.5 top-1/2 -translate-y-1/2 w-5 md:w-4 h-16 rounded-r-lg bg-zinc-800 hover:bg-zinc-700 border-r border-y border-zinc-700 hover:border-zinc-500 text-zinc-400 hover:text-zinc-100 flex items-center justify-center cursor-pointer shadow-xl transition-all duration-200 z-50 group"
           >
             <svg
               className="w-2.5 h-2.5 group-hover:scale-125 transition-transform"

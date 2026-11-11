@@ -1,8 +1,11 @@
 import ChallengeCard from './ChallengeCard.jsx';
 
 /**
- * Componente SideDrawers: Sistema de gavetas laterales dobles telescópicas (L1, L2, R1, R2)
- * que se deslizan independientemente para albergar los 15 niveles de desafíos.
+ * Componente SideDrawers: Sistema de gavetas laterales dobles telescópicas (L1, L2, R1, R2).
+ * - En escritorio (md:): se deslizan hacia afuera a izquierda y derecha del tablero.
+ * - En móvil (< 768px / max-md): quedan 100% ocultas (invisible) al estar cerradas y,
+ *   al abrirse, se deslizan hacia adentro sobre el lateral correspondiente del tablero
+ *   con desenfoque de fondo y cierre automático al seleccionar nivel o tocar fuera.
  *
  * @param {Object} props
  * @param {Array<Object>} props.levels - Catálogo completo de 15 niveles
@@ -14,6 +17,7 @@ import ChallengeCard from './ChallengeCard.jsx';
  * @param {boolean} props.isRightExtOpen - Apertura de sub-gaveta telescópica derecha
  * @param {Function} props.onToggleLeftExt - Alternar sub-gaveta izquierda
  * @param {Function} props.onToggleRightExt - Alternar sub-gaveta derecha
+ * @param {Function} [props.onCloseAll] - Cerrar gavetas al tocar fuera (móvil)
  */
 export default function SideDrawers({
   levels,
@@ -25,6 +29,7 @@ export default function SideDrawers({
   isRightExtOpen,
   onToggleLeftExt,
   onToggleRightExt,
+  onCloseAll,
 }) {
   // Distribución fija de los 15 niveles en los 4 compartimentos telescópicos
   const drawerL1 = levels.slice(0, 4);   // Niveles 1 al 4
@@ -34,14 +39,23 @@ export default function SideDrawers({
 
   return (
     <>
-      {/* ================= GAVETA IZQUIERDA 2 (TELESCÓPICA EXTERIOR) ================= */}
+      {/* Backdrop táctil en móvil para cerrar las gavetas al tocar fuera */}
+      {(isLeftOpen || isRightOpen) && onCloseAll && (
+        <div
+          onClick={onCloseAll}
+          aria-hidden="true"
+          className="md:hidden fixed inset-0 z-30 bg-black/45 backdrop-blur-[1.5px] transition-opacity duration-300"
+        />
+      )}
+
+      {/* ================= GAVETA IZQUIERDA 2 (TELESCÓPICA) ================= */}
       <div
-        className={`absolute top-0 bottom-0 left-0 w-[124px] bg-zinc-900 border-2 border-zinc-800 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
+        className={`absolute top-0 bottom-0 left-0 md:left-0 max-md:left-1.5 w-[124px] bg-zinc-900 max-md:bg-zinc-950/95 max-md:backdrop-blur-md border-2 border-zinc-800 max-md:border-zinc-700/90 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
           isLeftOpen && isLeftExtOpen
-            ? '-translate-x-[260px] opacity-100 pointer-events-auto z-10'
+            ? 'md:-translate-x-[260px] max-md:translate-x-[128px] opacity-100 pointer-events-auto visible z-30 md:z-10'
             : isLeftOpen
-            ? '-translate-x-[130px] opacity-0 pointer-events-none z-0'
-            : 'translate-x-0 opacity-0 pointer-events-none z-0'
+            ? 'md:-translate-x-[130px] max-md:translate-x-0 opacity-0 pointer-events-none invisible z-0'
+            : 'translate-x-0 opacity-0 pointer-events-none invisible z-0'
         }`}
       >
         <div className="w-full h-full flex flex-col justify-evenly items-center overflow-hidden py-1">
@@ -58,21 +72,22 @@ export default function SideDrawers({
 
       {/* ================= GAVETA IZQUIERDA 1 (PRIMARIA) ================= */}
       <div
-        className={`absolute top-0 bottom-0 left-0 w-[124px] bg-zinc-900 border-2 border-zinc-800 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
+        className={`absolute top-0 bottom-0 left-0 md:left-0 max-md:left-1.5 w-[124px] bg-zinc-900 max-md:bg-zinc-950/95 max-md:backdrop-blur-md border-2 border-zinc-800 max-md:border-zinc-700/90 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
           isLeftOpen
-            ? '-translate-x-[130px] opacity-100 pointer-events-auto z-20'
-            : 'translate-x-0 opacity-0 pointer-events-none z-0'
+            ? 'md:-translate-x-[130px] max-md:translate-x-0 opacity-100 pointer-events-auto visible z-40 md:z-20'
+            : 'translate-x-0 opacity-0 pointer-events-none invisible z-0'
         }`}
       >
-        {/* Pestaña / Flecha Telescópica exterior izquierda */}
+        {/* Pestaña Telescópica: En escritorio sale por la izquierda; en móvil sale por la derecha hacia adentro */}
         {isLeftOpen && onToggleLeftExt && (
           <button
             onClick={onToggleLeftExt}
             title={isLeftExtOpen ? 'Retraer sub-gaveta 2' : 'Extender sub-gaveta telescópica 2'}
-            className="absolute -left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-16 rounded-l-md bg-zinc-800 hover:bg-zinc-700 border-l border-y border-zinc-700 hover:border-zinc-500 text-zinc-400 hover:text-zinc-100 flex items-center justify-center cursor-pointer shadow-xl transition-colors z-30 group"
+            className="absolute md:-left-3.5 max-md:-right-4 top-1/2 -translate-y-1/2 w-4 md:w-3.5 h-16 md:rounded-l-md max-md:rounded-r-md bg-zinc-800 hover:bg-zinc-700 md:border-l max-md:border-r border-y border-zinc-700 hover:border-zinc-500 text-zinc-400 hover:text-zinc-100 flex items-center justify-center cursor-pointer shadow-xl transition-colors z-50 group"
           >
+            {/* Ícono Desktop (abre hacia la izquierda) */}
             <svg
-              className="w-2.5 h-2.5 group-hover:scale-125 transition-transform"
+              className="hidden md:block w-2.5 h-2.5 group-hover:scale-125 transition-transform"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -84,6 +99,22 @@ export default function SideDrawers({
                 <path d="M9 18l6-6-6-6" />
               ) : (
                 <path d="M15 18l-6-6 6-6" />
+              )}
+            </svg>
+            {/* Ícono Móvil (abre hacia adentro a la derecha) */}
+            <svg
+              className="md:hidden w-2.5 h-2.5 group-hover:scale-125 transition-transform"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {isLeftExtOpen ? (
+                <path d="M15 18l-6-6 6-6" />
+              ) : (
+                <path d="M9 18l6-6-6-6" />
               )}
             </svg>
           </button>
@@ -103,21 +134,22 @@ export default function SideDrawers({
 
       {/* ================= GAVETA DERECHA 1 (PRIMARIA) ================= */}
       <div
-        className={`absolute top-0 bottom-0 right-0 w-[124px] bg-zinc-900 border-2 border-zinc-800 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
+        className={`absolute top-0 bottom-0 right-0 md:right-0 max-md:right-1.5 w-[124px] bg-zinc-900 max-md:bg-zinc-950/95 max-md:backdrop-blur-md border-2 border-zinc-800 max-md:border-zinc-700/90 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
           isRightOpen
-            ? 'translate-x-[130px] opacity-100 pointer-events-auto z-20'
-            : 'translate-x-0 opacity-0 pointer-events-none z-0'
+            ? 'md:translate-x-[130px] max-md:translate-x-0 opacity-100 pointer-events-auto visible z-40 md:z-20'
+            : 'translate-x-0 opacity-0 pointer-events-none invisible z-0'
         }`}
       >
-        {/* Pestaña / Flecha Telescópica exterior derecha */}
+        {/* Pestaña Telescópica: En escritorio sale por la derecha; en móvil sale por la izquierda hacia adentro */}
         {isRightOpen && onToggleRightExt && (
           <button
             onClick={onToggleRightExt}
             title={isRightExtOpen ? 'Retraer sub-gaveta 2' : 'Extender sub-gaveta telescópica 2'}
-            className="absolute -right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-16 rounded-r-md bg-zinc-800 hover:bg-zinc-700 border-r border-y border-zinc-700 hover:border-zinc-500 text-zinc-400 hover:text-zinc-100 flex items-center justify-center cursor-pointer shadow-xl transition-colors z-30 group"
+            className="absolute md:-right-3.5 max-md:-left-4 top-1/2 -translate-y-1/2 w-4 md:w-3.5 h-16 md:rounded-r-md max-md:rounded-l-md bg-zinc-800 hover:bg-zinc-700 md:border-r max-md:border-l border-y border-zinc-700 hover:border-zinc-500 text-zinc-400 hover:text-zinc-100 flex items-center justify-center cursor-pointer shadow-xl transition-colors z-50 group"
           >
+            {/* Ícono Desktop (abre hacia la derecha) */}
             <svg
-              className="w-2.5 h-2.5 group-hover:scale-125 transition-transform"
+              className="hidden md:block w-2.5 h-2.5 group-hover:scale-125 transition-transform"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -129,6 +161,22 @@ export default function SideDrawers({
                 <path d="M15 18l-6-6 6-6" />
               ) : (
                 <path d="M9 18l6-6-6-6" />
+              )}
+            </svg>
+            {/* Ícono Móvil (abre hacia adentro a la izquierda) */}
+            <svg
+              className="md:hidden w-2.5 h-2.5 group-hover:scale-125 transition-transform"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {isRightExtOpen ? (
+                <path d="M9 18l6-6-6-6" />
+              ) : (
+                <path d="M15 18l-6-6 6-6" />
               )}
             </svg>
           </button>
@@ -146,14 +194,14 @@ export default function SideDrawers({
         </div>
       </div>
 
-      {/* ================= GAVETA DERECHA 2 (TELESCÓPICA EXTERIOR) ================= */}
+      {/* ================= GAVETA DERECHA 2 (TELESCÓPICA) ================= */}
       <div
-        className={`absolute top-0 bottom-0 right-0 w-[124px] bg-zinc-900 border-2 border-zinc-800 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
+        className={`absolute top-0 bottom-0 right-0 md:right-0 max-md:right-1.5 w-[124px] bg-zinc-900 max-md:bg-zinc-950/95 max-md:backdrop-blur-md border-2 border-zinc-800 max-md:border-zinc-700/90 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
           isRightOpen && isRightExtOpen
-            ? 'translate-x-[260px] opacity-100 pointer-events-auto z-10'
+            ? 'md:translate-x-[260px] max-md:-translate-x-[128px] opacity-100 pointer-events-auto visible z-30 md:z-10'
             : isRightOpen
-            ? 'translate-x-[130px] opacity-0 pointer-events-none z-0'
-            : 'translate-x-0 opacity-0 pointer-events-none z-0'
+            ? 'md:translate-x-[130px] max-md:translate-x-0 opacity-0 pointer-events-none invisible z-0'
+            : 'translate-x-0 opacity-0 pointer-events-none invisible z-0'
         }`}
       >
         <div className="w-full h-full flex flex-col justify-evenly items-center overflow-hidden py-1">

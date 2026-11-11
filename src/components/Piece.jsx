@@ -32,6 +32,7 @@ export default function Piece({
   const lockedAxisRef = useRef(null); // 'x' | 'y' | null
   const pointerIdRef = useRef(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const scaleRef = useRef(1);
 
   const baseLeft = c * cellSize;
   const baseTop = r * cellSize;
@@ -60,6 +61,10 @@ export default function Piece({
         onDragStart();
       }
 
+      // Detectar escala visual del contenedor (para móviles con scale-[0.9] o scale-[0.78])
+      const rect = e.currentTarget.getBoundingClientRect();
+      scaleRef.current = rect.width > 0 ? rect.width / width : 1;
+
       startPointerRef.current = { x: e.clientX, y: e.clientY };
       lockedAxisRef.current = null;
       setIsSnappingBack(false);
@@ -74,7 +79,7 @@ export default function Piece({
       setDragOffset({ x: 0, y: 0 });
       setIsDragging(true);
     },
-    [grid, piece, onDragStart]
+    [grid, piece, onDragStart, width]
   );
 
   /**
@@ -84,8 +89,9 @@ export default function Piece({
     (e) => {
       if (!isDragging || e.pointerId !== pointerIdRef.current) return;
 
-      const rawDx = e.clientX - startPointerRef.current.x;
-      const rawDy = e.clientY - startPointerRef.current.y;
+      const scale = scaleRef.current || 1;
+      const rawDx = (e.clientX - startPointerRef.current.x) / scale;
+      const rawDy = (e.clientY - startPointerRef.current.y) / scale;
       const bounds = boundsRef.current;
 
       // Bloqueo de eje con umbral inicial de 5px
