@@ -16,7 +16,8 @@ export default function ChallengeCard({
   horizontal = false,
 }) {
   if (!level) return null;
-  const { name, difficulty, minSteps, pieces } = level;
+  const { name, difficulty, minSteps, optimalMoves, pieces } = level;
+  const stepsCount = optimalMoves ?? minSteps;
 
   if (horizontal) {
     // Modo Cartucho Horizontal para la ranura superior izquierda de la consola
@@ -25,7 +26,7 @@ export default function ChallengeCard({
         onClick={onClick}
         role="button"
         tabIndex={0}
-        title={`${name} (${minSteps} pasos)`}
+        title={`${name} (${stepsCount} pasos)`}
         className={`group relative select-none rounded-xl bg-zinc-950 border px-1.5 py-1 transition-all duration-200 cursor-pointer flex items-center gap-2 ${
           isActive
             ? 'border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.5)] ring-1 ring-cyan-400/50'
@@ -85,8 +86,8 @@ export default function ChallengeCard({
       onClick={onClick}
       role="button"
       tabIndex={0}
-      title={`${name} (${minSteps} pasos)`}
-      className={`group relative select-none rounded-xl bg-zinc-950 border p-1.5 transition-all duration-200 cursor-pointer w-full flex flex-col items-center gap-1 ${
+      title={`${name} (${stepsCount} pasos)`}
+      className={`group relative select-none rounded-xl bg-zinc-950 border p-1 transition-all duration-200 cursor-pointer w-full flex flex-col items-center gap-0.5 ${
         isActive
           ? 'border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.5)] ring-1 ring-cyan-400/50'
           : 'border-zinc-800 hover:border-cyan-400/70 hover:shadow-[0_0_8px_rgba(6,182,212,0.3)] hover:scale-[1.02]'
@@ -95,7 +96,7 @@ export default function ChallengeCard({
       {/* Contenedor del Mini-Tablero 5x4 con piezas unificadas */}
       <div
         className="rounded bg-zinc-900 border border-zinc-800 relative overflow-hidden shadow-inner shrink-0"
-        style={{ width: '42px', height: '52px' }}
+        style={{ width: '40px', height: '50px' }}
       >
         {pieces &&
           Object.values(pieces).map((piece) => (
@@ -142,7 +143,7 @@ export default function ChallengeCard({
           {name}
         </div>
         <div className="text-[8px] font-mono text-cyan-400 font-medium">
-          {minSteps} pasos
+          {stepsCount} pasos
         </div>
       </div>
     </div>

@@ -2,8 +2,14 @@
  * Catálogo oficial de los 15 niveles físicos originales del juego Klotski 3D
  * replicados con exactitud de las tarjetas reales (WhatsApp Image 2026-11-09 at 18.29.52.jpeg).
  *
- * Cada nivel ocupa exactamente 18 celdas (dejando 2 espacios vacíos en la cuadrícula 5x4)
- * y tiene su ruta mínima verificada mediante el motor BFS.
+ * Ordenamiento doble:
+ * 1. Primero por `difficultyTier` (Tier 1 = 1 punto, Tier 2 = 2 puntos, Tier 3 = 3 puntos,
+ *    Tier 4 = 4 puntos, Tier 5 = 'bar' barra blanca).
+ * 2. En caso de empate dentro del mismo Tier, de menor a mayor según `optimalMoves` (pasos BFS).
+ *
+ * Distribución por gavetas:
+ * - Izquierda (Retos 1 al 8): Niveles Iniciales / Intermedios
+ * - Derecha (Retos 9 al 15): Niveles Avanzados / Maestros
  */
 
 const DIMS = {
@@ -22,158 +28,30 @@ function buildPieces(layout) {
   return pieces;
 }
 
-export const LEVELS = [
-  // ================= FILA 1 DE LA FOTO (Niveles 1 al 6) =================
-  {
-    id: 'level-1',
-    name: 'Reto 1',
-    difficulty: {
-      type: 'bar',
-      count: 5,
-      pattern: ['full-bar'],
-      label: 'Maestro',
-    },
-    minSteps: 144,
-    pieces: buildPieces([
-      ['R', 'R', 0, 0],
-      ['Y1', 'Y', 0, 2],
-      ['V1', 'V', 0, 3],
-      ['V2', 'V', 2, 1],
-      ['H1', 'H', 2, 2],
-      ['Y2', 'Y', 3, 0],
-      ['H2', 'H', 3, 2],
-      ['Y3', 'Y', 4, 0],
-      ['Y4', 'Y', 4, 1],
-      ['H3', 'H', 4, 2],
-    ]),
-  },
-  {
-    id: 'level-2',
-    name: 'Reto 2',
-    difficulty: {
-      type: 'bar',
-      count: 5,
-      pattern: ['med-bar'],
-      label: 'Maestro',
-    },
-    minSteps: 144,
-    pieces: buildPieces([
-      ['Y1', 'Y', 0, 0],
-      ['Y2', 'Y', 0, 2],
-      ['Y3', 'Y', 0, 3],
-      ['V1', 'V', 1, 0],
-      ['R', 'R', 1, 2],
-      ['V2', 'V', 2, 1],
-      ['V3', 'V', 3, 0],
-      ['H1', 'H', 3, 2],
-      ['H2', 'H', 4, 1],
-      ['Y4', 'Y', 4, 3],
-    ]),
-  },
-  {
-    id: 'level-3',
-    name: 'Reto 3',
-    difficulty: {
-      type: 'dots',
-      count: 4,
-      pattern: ['dot', 'dot', 'dot', 'dot'],
-      label: 'Experto',
-    },
-    minSteps: 109,
-    pieces: buildPieces([
-      ['R', 'R', 0, 0],
-      ['Y1', 'Y', 0, 2],
-      ['Y2', 'Y', 0, 3],
-      ['H1', 'H', 1, 2],
-      ['H2', 'H', 2, 0],
-      ['Y3', 'Y', 2, 2],
-      ['Y4', 'Y', 3, 0],
-      ['V1', 'V', 3, 1],
-      ['H3', 'H', 3, 2],
-      ['H4', 'H', 4, 2],
-    ]),
-  },
-  {
-    id: 'level-4',
-    name: 'Reto 4',
-    difficulty: {
-      type: 'bar',
-      count: 4,
-      pattern: ['short-bar', 'short-bar'],
-      label: 'Avanzado',
-    },
-    minSteps: 90,
-    pieces: buildPieces([
-      ['V1', 'V', 0, 0],
-      ['R', 'R', 0, 1],
-      ['V2', 'V', 0, 3],
-      ['V3', 'V', 2, 0],
-      ['H1', 'H', 2, 1],
-      ['V4', 'V', 2, 3],
-      ['Y1', 'Y', 3, 1],
-      ['Y2', 'Y', 3, 2],
-      ['Y3', 'Y', 4, 0],
-      ['Y4', 'Y', 4, 3],
-    ]),
-  },
-  {
-    id: 'level-5',
-    name: 'Reto 5',
-    difficulty: {
-      type: 'bar',
-      count: 5,
-      pattern: ['full-bar'],
-      label: 'Maestro',
-    },
-    minSteps: 150,
-    pieces: buildPieces([
-      ['Y1', 'Y', 0, 0],
-      ['Y2', 'Y', 0, 1],
-      ['Y3', 'Y', 0, 2],
-      ['V1', 'V', 0, 3],
-      ['R', 'R', 1, 0],
-      ['V2', 'V', 1, 2],
-      ['V3', 'V', 2, 3],
-      ['H1', 'H', 3, 1],
-      ['Y4', 'Y', 4, 1],
-      ['H2', 'H', 4, 2],
-    ]),
-  },
-  {
-    id: 'level-6',
-    name: 'Reto 6',
-    difficulty: {
-      type: 'dots',
-      count: 3,
-      pattern: ['dot', 'dot', 'half-dot'],
-      label: 'Intermedio+',
-    },
-    minSteps: 80,
-    pieces: buildPieces([
-      ['R', 'R', 0, 0],
-      ['Y1', 'Y', 0, 2],
-      ['V1', 'V', 0, 3],
-      ['V2', 'V', 1, 2],
-      ['H1', 'H', 2, 0],
-      ['Y2', 'Y', 2, 3],
-      ['Y3', 'Y', 3, 1],
-      ['H2', 'H', 3, 2],
-      ['H3', 'H', 4, 0],
-      ['Y4', 'Y', 4, 2],
-    ]),
-  },
+/**
+ * Calcula el peso numérico de dificultad (1 a 5) según el tipo/cantidad del indicador físico.
+ * - 1 punto blanco = Tier 1
+ * - 2 puntos blancos = Tier 2
+ * - 3 puntos blancos = Tier 3
+ * - 4 puntos blancos = Tier 4
+ * - 'bar' (Barra blanca) = Tier 5
+ */
+export function getDifficultyTier(difficulty) {
+  if (!difficulty) return 1;
+  if (difficulty.type === 'bar') return 5;
+  return Math.min(Math.max(Number(difficulty.count) || 1, 1), 4);
+}
 
-  // ================= FILA 2 DE LA FOTO (Niveles 7 al 12) =================
+const RAW_LEVELS = [
+  // ================= TIER 1 (1 Punto Blanco) =================
   {
-    id: 'level-7',
-    name: 'Reto 7',
     difficulty: {
       type: 'dots',
       count: 1,
       pattern: ['dot'],
       label: 'Iniciación',
     },
-    minSteps: 22,
+    optimalMoves: 22,
     pieces: buildPieces([
       ['Y1', 'Y', 0, 0],
       ['Y2', 'Y', 0, 1],
@@ -190,63 +68,16 @@ export const LEVELS = [
       ['Y10', 'Y', 4, 3],
     ]),
   },
+
+  // ================= TIER 2 (2 Puntos Blancos) =================
   {
-    id: 'level-8',
-    name: 'Reto 8',
-    difficulty: {
-      type: 'bar',
-      count: 3,
-      pattern: ['short-bar', 'dot', 'dot'],
-      label: 'Táctico',
-    },
-    minSteps: 27,
-    pieces: buildPieces([
-      ['Y1', 'Y', 0, 2],
-      ['Y2', 'Y', 0, 3],
-      ['R', 'R', 1, 0],
-      ['Y3', 'Y', 1, 2],
-      ['V1', 'V', 1, 3],
-      ['Y4', 'Y', 2, 2],
-      ['H1', 'H', 3, 0],
-      ['H2', 'H', 3, 2],
-      ['Y5', 'Y', 4, 0],
-      ['Y6', 'Y', 4, 1],
-      ['H3', 'H', 4, 2],
-    ]),
-  },
-  {
-    id: 'level-9',
-    name: 'Reto 9',
-    difficulty: {
-      type: 'bar',
-      count: 5,
-      pattern: ['full-bar'],
-      label: 'Maestro',
-    },
-    minSteps: 149,
-    pieces: buildPieces([
-      ['V1', 'V', 0, 0],
-      ['Y1', 'Y', 0, 1],
-      ['Y2', 'Y', 0, 2],
-      ['Y3', 'Y', 0, 3],
-      ['V2', 'V', 1, 1],
-      ['R', 'R', 1, 2],
-      ['V3', 'V', 2, 0],
-      ['H1', 'H', 3, 1],
-      ['Y4', 'Y', 3, 3],
-      ['H2', 'H', 4, 1],
-    ]),
-  },
-  {
-    id: 'level-10',
-    name: 'Reto 10',
     difficulty: {
       type: 'dots',
       count: 2,
       pattern: ['dot', 'dot'],
       label: 'Básico',
     },
-    minSteps: 15,
+    optimalMoves: 15,
     pieces: buildPieces([
       ['Y1', 'Y', 0, 0],
       ['H1', 'H', 0, 1],
@@ -262,15 +93,13 @@ export const LEVELS = [
     ]),
   },
   {
-    id: 'level-11',
-    name: 'Reto 11',
     difficulty: {
       type: 'dots',
       count: 2,
       pattern: ['dot', 'half-dot'],
       label: 'Iniciación+',
     },
-    minSteps: 26,
+    optimalMoves: 26,
     pieces: buildPieces([
       ['R', 'R', 0, 0],
       ['Y1', 'Y', 0, 2],
@@ -286,41 +115,38 @@ export const LEVELS = [
       ['Y8', 'Y', 4, 1],
     ]),
   },
+
+  // ================= TIER 3 (3 Puntos Blancos) =================
   {
-    id: 'level-12',
-    name: 'Reto 12',
     difficulty: {
-      type: 'bar',
-      count: 5,
-      pattern: ['med-bar', 'dot'],
-      label: 'Maestro',
+      type: 'dots',
+      count: 3,
+      pattern: ['short-bar', 'dot', 'dot'],
+      label: 'Táctico',
     },
-    minSteps: 143,
+    optimalMoves: 27,
     pieces: buildPieces([
-      ['V1', 'V', 0, 0],
-      ['R', 'R', 0, 2],
-      ['Y1', 'Y', 1, 1],
-      ['H1', 'H', 2, 0],
-      ['V2', 'V', 2, 2],
-      ['Y2', 'Y', 2, 3],
-      ['H2', 'H', 3, 0],
-      ['Y3', 'Y', 3, 3],
-      ['H3', 'H', 4, 1],
-      ['Y4', 'Y', 4, 3],
+      ['Y1', 'Y', 0, 2],
+      ['Y2', 'Y', 0, 3],
+      ['R', 'R', 1, 0],
+      ['Y3', 'Y', 1, 2],
+      ['V1', 'V', 1, 3],
+      ['Y4', 'Y', 2, 2],
+      ['H1', 'H', 3, 0],
+      ['H2', 'H', 3, 2],
+      ['Y5', 'Y', 4, 0],
+      ['Y6', 'Y', 4, 1],
+      ['H3', 'H', 4, 2],
     ]),
   },
-
-  // ================= FILA 3 DE LA FOTO (Niveles 13 al 15) =================
   {
-    id: 'level-13',
-    name: 'Reto 13',
     difficulty: {
       type: 'dots',
       count: 3,
       pattern: ['dot', 'dot', 'dot'],
       label: 'Intermedio',
     },
-    minSteps: 43,
+    optimalMoves: 43,
     pieces: buildPieces([
       ['H1', 'H', 0, 0],
       ['H2', 'H', 0, 2],
@@ -335,15 +161,36 @@ export const LEVELS = [
     ]),
   },
   {
-    id: 'level-14',
-    name: 'Reto 14',
+    difficulty: {
+      type: 'dots',
+      count: 3,
+      pattern: ['dot', 'dot', 'half-dot'],
+      label: 'Intermedio+',
+    },
+    optimalMoves: 80,
+    pieces: buildPieces([
+      ['R', 'R', 0, 0],
+      ['Y1', 'Y', 0, 2],
+      ['V1', 'V', 0, 3],
+      ['V2', 'V', 1, 2],
+      ['H1', 'H', 2, 0],
+      ['Y2', 'Y', 2, 3],
+      ['Y3', 'Y', 3, 1],
+      ['H2', 'H', 3, 2],
+      ['H3', 'H', 4, 0],
+      ['Y4', 'Y', 4, 2],
+    ]),
+  },
+
+  // ================= TIER 4 (4 Puntos Blancos) =================
+  {
     difficulty: {
       type: 'dots',
       count: 4,
       pattern: ['dot', 'dot', 'dot', 'half-dot'],
-      label: 'Avanzado+',
+      label: 'Avanzado',
     },
-    minSteps: 71,
+    optimalMoves: 71,
     pieces: buildPieces([
       ['V1', 'V', 0, 0],
       ['H1', 'H', 0, 1],
@@ -358,15 +205,120 @@ export const LEVELS = [
     ]),
   },
   {
-    id: 'level-15',
-    name: 'Reto 15',
+    difficulty: {
+      type: 'dots',
+      count: 4,
+      pattern: ['short-bar', 'short-bar'],
+      label: 'Avanzado+',
+    },
+    optimalMoves: 90,
+    pieces: buildPieces([
+      ['V1', 'V', 0, 0],
+      ['R', 'R', 0, 1],
+      ['V2', 'V', 0, 3],
+      ['V3', 'V', 2, 0],
+      ['H1', 'H', 2, 1],
+      ['V4', 'V', 2, 3],
+      ['Y1', 'Y', 3, 1],
+      ['Y2', 'Y', 3, 2],
+      ['Y3', 'Y', 4, 0],
+      ['Y4', 'Y', 4, 3],
+    ]),
+  },
+  {
+    difficulty: {
+      type: 'dots',
+      count: 4,
+      pattern: ['dot', 'dot', 'dot', 'dot'],
+      label: 'Experto',
+    },
+    optimalMoves: 109,
+    pieces: buildPieces([
+      ['R', 'R', 0, 0],
+      ['Y1', 'Y', 0, 2],
+      ['Y2', 'Y', 0, 3],
+      ['H1', 'H', 1, 2],
+      ['H2', 'H', 2, 0],
+      ['Y3', 'Y', 2, 2],
+      ['Y4', 'Y', 3, 0],
+      ['V1', 'V', 3, 1],
+      ['H3', 'H', 3, 2],
+      ['H4', 'H', 4, 2],
+    ]),
+  },
+
+  // ================= TIER 5 (Barra Blanca 'bar') =================
+  {
+    difficulty: {
+      type: 'bar',
+      count: 5,
+      pattern: ['med-bar', 'dot'],
+      label: 'Maestro',
+    },
+    optimalMoves: 143,
+    pieces: buildPieces([
+      ['V1', 'V', 0, 0],
+      ['R', 'R', 0, 2],
+      ['Y1', 'Y', 1, 1],
+      ['H1', 'H', 2, 0],
+      ['V2', 'V', 2, 2],
+      ['Y2', 'Y', 2, 3],
+      ['H2', 'H', 3, 0],
+      ['Y3', 'Y', 3, 3],
+      ['H3', 'H', 4, 1],
+      ['Y4', 'Y', 4, 3],
+    ]),
+  },
+  {
+    difficulty: {
+      type: 'bar',
+      count: 5,
+      pattern: ['full-bar'],
+      label: 'Maestro',
+    },
+    optimalMoves: 144,
+    pieces: buildPieces([
+      ['R', 'R', 0, 0],
+      ['Y1', 'Y', 0, 2],
+      ['V1', 'V', 0, 3],
+      ['V2', 'V', 2, 1],
+      ['H1', 'H', 2, 2],
+      ['Y2', 'Y', 3, 0],
+      ['H2', 'H', 3, 2],
+      ['Y3', 'Y', 4, 0],
+      ['Y4', 'Y', 4, 1],
+      ['H3', 'H', 4, 2],
+    ]),
+  },
+  {
+    difficulty: {
+      type: 'bar',
+      count: 5,
+      pattern: ['med-bar'],
+      label: 'Maestro',
+    },
+    optimalMoves: 144,
+    pieces: buildPieces([
+      ['Y1', 'Y', 0, 0],
+      ['Y2', 'Y', 0, 2],
+      ['Y3', 'Y', 0, 3],
+      ['V1', 'V', 1, 0],
+      ['R', 'R', 1, 2],
+      ['V2', 'V', 2, 1],
+      ['V3', 'V', 3, 0],
+      ['H1', 'H', 3, 2],
+      ['H2', 'H', 4, 1],
+      ['Y4', 'Y', 4, 3],
+    ]),
+  },
+  {
     difficulty: {
       type: 'bar',
       count: 5,
       pattern: ['med-bar', 'half-dot'],
       label: 'Maestro',
     },
-    minSteps: 147,
+    optimalMoves: 147,
     pieces: buildPieces([
       ['Y1', 'Y', 0, 1],
       ['Y2', 'Y', 0, 2],
@@ -380,6 +332,65 @@ export const LEVELS = [
       ['H2', 'H', 4, 2],
     ]),
   },
+  {
+    difficulty: {
+      type: 'bar',
+      count: 5,
+      pattern: ['full-bar'],
+      label: 'Maestro',
+    },
+    optimalMoves: 149,
+    pieces: buildPieces([
+      ['V1', 'V', 0, 0],
+      ['Y1', 'Y', 0, 1],
+      ['Y2', 'Y', 0, 2],
+      ['Y3', 'Y', 0, 3],
+      ['V2', 'V', 1, 1],
+      ['R', 'R', 1, 2],
+      ['V3', 'V', 2, 0],
+      ['H1', 'H', 3, 1],
+      ['Y4', 'Y', 3, 3],
+      ['H2', 'H', 4, 1],
+    ]),
+  },
+  {
+    difficulty: {
+      type: 'bar',
+      count: 5,
+      pattern: ['full-bar'],
+      label: 'Maestro',
+    },
+    optimalMoves: 150,
+    pieces: buildPieces([
+      ['Y1', 'Y', 0, 0],
+      ['Y2', 'Y', 0, 1],
+      ['Y3', 'Y', 0, 2],
+      ['V1', 'V', 0, 3],
+      ['R', 'R', 1, 0],
+      ['V2', 'V', 1, 2],
+      ['V3', 'V', 2, 3],
+      ['H1', 'H', 3, 1],
+      ['Y4', 'Y', 4, 1],
+      ['H2', 'H', 4, 2],
+    ]),
+  },
 ];
+
+// Ordenamiento doble: 1° por difficultyTier (1 a 5), 2° por optimalMoves ascendente
+export const LEVELS = [...RAW_LEVELS]
+  .map((lvl) => ({
+    ...lvl,
+    difficultyTier: getDifficultyTier(lvl.difficulty),
+    minSteps: lvl.optimalMoves,
+  }))
+  .sort(
+    (a, b) =>
+      a.difficultyTier - b.difficultyTier || a.optimalMoves - b.optimalMoves
+  )
+  .map((lvl, idx) => ({
+    ...lvl,
+    id: `level-${idx + 1}`,
+    name: `Reto ${idx + 1}`,
+  }));
 
 export const DEFAULT_LEVEL = LEVELS[0];

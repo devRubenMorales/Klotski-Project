@@ -31,11 +31,13 @@ export default function SideDrawers({
   onToggleRightExt,
   onCloseAll,
 }) {
-  // Distribución fija de los 15 niveles en los 4 compartimentos telescópicos
-  const drawerL1 = levels.slice(0, 4);   // Niveles 1 al 4
-  const drawerL2 = levels.slice(4, 8);   // Niveles 5 al 8 (Telescópica)
-  const drawerR1 = levels.slice(8, 12);  // Niveles 9 al 12
-  const drawerR2 = levels.slice(12, 15); // Niveles 13 al 15 (Telescópica)
+  // Distribución fija de los 15 niveles ordenados por dificultad en los 4 compartimentos telescópicos:
+  // Izquierda (Retos 1 al 8): Niveles Iniciales / Intermedios
+  // Derecha (Retos 9 al 15): Niveles Avanzados / Maestros
+  const drawerL1 = levels.slice(0, 4);   // Retos 1 al 4 (Iniciales)
+  const drawerL2 = levels.slice(4, 8);   // Retos 5 al 8 (Intermedios - Sub-gaveta)
+  const drawerR1 = levels.slice(8, 12);  // Retos 9 al 12 (Avanzados)
+  const drawerR2 = levels.slice(12, 15); // Retos 13 al 15 (Maestros - Sub-gaveta)
 
   return (
     <>
@@ -50,7 +52,7 @@ export default function SideDrawers({
 
       {/* ================= GAVETA IZQUIERDA 2 (TELESCÓPICA) ================= */}
       <div
-        className={`absolute top-0 bottom-0 left-0 md:left-0 max-md:left-1.5 w-[124px] bg-zinc-900 max-md:bg-zinc-950/95 max-md:backdrop-blur-md border-2 border-zinc-800 max-md:border-zinc-700/90 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
+        className={`absolute top-0 bottom-0 left-0 md:left-0 max-md:left-1.5 w-[124px] bg-zinc-900 max-md:bg-zinc-950/95 max-md:backdrop-blur-md border-2 border-zinc-800 max-md:border-zinc-700/90 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none flex flex-col ${
           isLeftOpen && isLeftExtOpen
             ? 'md:-translate-x-[260px] max-md:translate-x-[128px] opacity-100 pointer-events-auto visible z-30 md:z-10'
             : isLeftOpen
@@ -58,7 +60,12 @@ export default function SideDrawers({
             : 'translate-x-0 opacity-0 pointer-events-none invisible z-0'
         }`}
       >
-        <div className="w-full h-full flex flex-col justify-evenly items-center overflow-hidden py-1">
+        <div className="w-full pb-1 mb-0.5 border-b border-zinc-800/80 text-center shrink-0">
+          <span className="block text-[7.5px] leading-[1.15] font-mono font-semibold tracking-wider text-zinc-400 uppercase">
+            NIVELES INICIALES / INTERMEDIOS
+          </span>
+        </div>
+        <div className="w-full flex-1 flex flex-col justify-evenly items-center overflow-hidden">
           {drawerL2.map((lvl) => (
             <ChallengeCard
               key={lvl.id}
@@ -72,7 +79,7 @@ export default function SideDrawers({
 
       {/* ================= GAVETA IZQUIERDA 1 (PRIMARIA) ================= */}
       <div
-        className={`absolute top-0 bottom-0 left-0 md:left-0 max-md:left-1.5 w-[124px] bg-zinc-900 max-md:bg-zinc-950/95 max-md:backdrop-blur-md border-2 border-zinc-800 max-md:border-zinc-700/90 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
+        className={`absolute top-0 bottom-0 left-0 md:left-0 max-md:left-1.5 w-[124px] bg-zinc-900 max-md:bg-zinc-950/95 max-md:backdrop-blur-md border-2 border-zinc-800 max-md:border-zinc-700/90 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none flex flex-col ${
           isLeftOpen
             ? 'md:-translate-x-[130px] max-md:translate-x-0 opacity-100 pointer-events-auto visible z-40 md:z-20'
             : 'translate-x-0 opacity-0 pointer-events-none invisible z-0'
@@ -120,7 +127,12 @@ export default function SideDrawers({
           </button>
         )}
 
-        <div className="w-full h-full flex flex-col justify-evenly items-center overflow-hidden py-1">
+        <div className="w-full pb-1 mb-0.5 border-b border-zinc-800/80 text-center shrink-0">
+          <span className="block text-[7.5px] leading-[1.15] font-mono font-semibold tracking-wider text-zinc-400 uppercase">
+            NIVELES INICIALES / INTERMEDIOS
+          </span>
+        </div>
+        <div className="w-full flex-1 flex flex-col justify-evenly items-center overflow-hidden">
           {drawerL1.map((lvl) => (
             <ChallengeCard
               key={lvl.id}
@@ -134,7 +146,7 @@ export default function SideDrawers({
 
       {/* ================= GAVETA DERECHA 1 (PRIMARIA) ================= */}
       <div
-        className={`absolute top-0 bottom-0 right-0 md:right-0 max-md:right-1.5 w-[124px] bg-zinc-900 max-md:bg-zinc-950/95 max-md:backdrop-blur-md border-2 border-zinc-800 max-md:border-zinc-700/90 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
+        className={`absolute top-0 bottom-0 right-0 md:right-0 max-md:right-1.5 w-[124px] bg-zinc-900 max-md:bg-zinc-950/95 max-md:backdrop-blur-md border-2 border-zinc-800 max-md:border-zinc-700/90 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none flex flex-col ${
           isRightOpen
             ? 'md:translate-x-[130px] max-md:translate-x-0 opacity-100 pointer-events-auto visible z-40 md:z-20'
             : 'translate-x-0 opacity-0 pointer-events-none invisible z-0'
@@ -182,7 +194,12 @@ export default function SideDrawers({
           </button>
         )}
 
-        <div className="w-full h-full flex flex-col justify-evenly items-center overflow-hidden py-1">
+        <div className="w-full pb-1 mb-0.5 border-b border-zinc-800/80 text-center shrink-0">
+          <span className="block text-[7.5px] leading-[1.15] font-mono font-semibold tracking-wider text-zinc-400 uppercase">
+            NIVELES AVANZADOS / MAESTROS
+          </span>
+        </div>
+        <div className="w-full flex-1 flex flex-col justify-evenly items-center overflow-hidden">
           {drawerR1.map((lvl) => (
             <ChallengeCard
               key={lvl.id}
@@ -196,7 +213,7 @@ export default function SideDrawers({
 
       {/* ================= GAVETA DERECHA 2 (TELESCÓPICA) ================= */}
       <div
-        className={`absolute top-0 bottom-0 right-0 md:right-0 max-md:right-1.5 w-[124px] bg-zinc-900 max-md:bg-zinc-950/95 max-md:backdrop-blur-md border-2 border-zinc-800 max-md:border-zinc-700/90 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
+        className={`absolute top-0 bottom-0 right-0 md:right-0 max-md:right-1.5 w-[124px] bg-zinc-900 max-md:bg-zinc-950/95 max-md:backdrop-blur-md border-2 border-zinc-800 max-md:border-zinc-700/90 rounded-2xl p-2 shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none flex flex-col ${
           isRightOpen && isRightExtOpen
             ? 'md:translate-x-[260px] max-md:-translate-x-[128px] opacity-100 pointer-events-auto visible z-30 md:z-10'
             : isRightOpen
@@ -204,7 +221,12 @@ export default function SideDrawers({
             : 'translate-x-0 opacity-0 pointer-events-none invisible z-0'
         }`}
       >
-        <div className="w-full h-full flex flex-col justify-evenly items-center overflow-hidden py-1">
+        <div className="w-full pb-1 mb-0.5 border-b border-zinc-800/80 text-center shrink-0">
+          <span className="block text-[7.5px] leading-[1.15] font-mono font-semibold tracking-wider text-zinc-400 uppercase">
+            NIVELES AVANZADOS / MAESTROS
+          </span>
+        </div>
+        <div className="w-full flex-1 flex flex-col justify-evenly items-center overflow-hidden">
           {drawerR2.map((lvl) => (
             <ChallengeCard
               key={lvl.id}
