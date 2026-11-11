@@ -187,26 +187,23 @@ export default function App() {
 
       {/* Contenedor Principal: En Desktop alinea Tablero + Solver horizontalmente; en Móvil centra el Tablero y fija el Solver abajo */}
       <div
-        className={`z-10 w-full max-w-6xl flex flex-col md:flex-row items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isSolverMenuOpen ? 'md:gap-6 lg:gap-12' : 'gap-0'
-        }`}
+        className={`z-10 w-full max-w-6xl flex flex-col md:flex-row items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isSolverMenuOpen ? 'md:gap-6 lg:gap-12' : 'gap-0'
+          }`}
       >
         {/* Consola Física con Gavetas Telescópicas Dobles */}
         <section
           aria-label="Tablero Klotski con gavetas telescópicas"
-          className={`relative flex flex-col items-center shrink-0 transition-transform duration-300 ease-out ${
-            isSolverMenuOpen
+          className={`relative flex flex-col items-center shrink-0 transition-transform duration-300 ease-out ${isSolverMenuOpen
               ? 'max-md:scale-[0.78] max-md:origin-top max-md:-mt-2 max-md:-translate-y-16 md:scale-100 md:translate-y-0'
               : 'max-md:scale-[0.9] sm:scale-100 translate-y-0'
-          }`}
+            }`}
         >
           {/* Botón Superior para Abrir Asistencia IA (desaparece suavemente al abrir el menú) */}
           <div
-            className={`absolute -top-13 md:-top-14 left-1/2 -translate-x-1/2 z-30 w-[288px] transition-all duration-300 ease-out ${
-              isSolverMenuOpen
+            className={`absolute -top-13 md:-top-14 left-1/2 -translate-x-1/2 z-30 w-[288px] transition-all duration-300 ease-out ${isSolverMenuOpen
                 ? 'opacity-0 -translate-y-2 scale-95 pointer-events-none invisible'
                 : 'opacity-100 translate-y-0 scale-100 pointer-events-auto visible'
-            }`}
+              }`}
             style={{ top: '-52px' }}
           >
             <button
@@ -227,7 +224,7 @@ export default function App() {
                   d="M13 10V3L4 14h7v7l9-11h-7z"
                 />
               </svg>
-              <span>Resolver con IA / Obtener Ayuda</span>
+              <span>Resolver con IA</span>
             </button>
           </div>
 
@@ -271,18 +268,16 @@ export default function App() {
             - En Móvil (< 768px): Bottom Bar compacta fija en la parte inferior de la pantalla. */}
         <section
           aria-label="Controles del Solver"
-          className={`shrink-0 max-md:fixed max-md:bottom-0 max-md:inset-x-0 max-md:z-40 max-md:px-2.5 max-md:pb-2.5 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-            isSolverMenuOpen
+          className={`shrink-0 max-md:fixed max-md:bottom-0 max-md:inset-x-0 max-md:z-40 max-md:px-2.5 max-md:pb-2.5 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isSolverMenuOpen
               ? 'max-md:translate-y-0 max-md:opacity-100 max-md:pointer-events-auto max-md:visible md:w-[400px] lg:w-[448px] md:max-w-md md:opacity-100 md:pointer-events-auto md:visible'
               : 'max-md:translate-y-full max-md:opacity-0 max-md:pointer-events-none max-md:invisible md:w-0 md:max-w-0 md:opacity-0 md:pointer-events-none md:invisible md:overflow-hidden'
-          }`}
+            }`}
         >
           <div
-            className={`w-full md:w-[400px] lg:w-[448px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-              isSolverMenuOpen
+            className={`w-full md:w-[400px] lg:w-[448px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${isSolverMenuOpen
                 ? 'md:translate-x-0 md:scale-100 opacity-100'
                 : 'md:-translate-x-16 md:scale-95 opacity-0'
-            }`}
+              }`}
           >
             <Controls
               currentStepIndex={currentStepIndex}
