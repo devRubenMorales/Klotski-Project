@@ -120,27 +120,28 @@ export default function Board({
             )}
           </div>
 
-          {/* Logo / Escudo Blanco Vectorizado Estilizado */}
-          <div className="flex flex-col items-center justify-center pr-2">
+          {/* Logo / Escudo Blanco Vectorizado (Fiel al grabado original del tablero físico) */}
+          <div className="flex-1 flex items-center justify-center pl-4">
             <svg
-              viewBox="0 0 100 120"
-              className="w-12 h-14 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
+              viewBox="0 0 100 112"
+              className="w-14 h-16 drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
+              {/* Contorno del casco / escudo poligonal */}
               <path
-                d="M 50 10 L 72 20 L 86 16 L 86 52 C 86 80 50 110 50 110 C 50 110 14 80 14 52 L 14 16 L 28 20 Z"
-                fill="#18181b"
+                d="M 50 8 L 65 20 L 85 27 L 85 73 L 75 79 L 72 89 L 50 104 L 28 89 L 25 79 L 15 73 L 15 27 L 35 20 Z"
+                fill="#111113"
                 stroke="#ffffff"
-                strokeWidth="6"
-                strokeLinejoin="round"
+                strokeWidth="8.5"
+                strokeLinejoin="miter"
+                strokeMiterlimit="6"
               />
-              <path d="M 33 40 L 44 40 L 41 74 L 30 74 Z" fill="#ffffff" />
-              <path d="M 67 40 L 56 40 L 59 74 L 70 74 Z" fill="#ffffff" />
+              {/* Ojo izquierdo (paralelogramo inclinado hacia el centro) */}
+              <path d="M 27 39 L 44 50 L 44 73 L 27 62 Z" fill="#ffffff" />
+              {/* Ojo derecho (paralelogramo inclinado hacia el centro) */}
+              <path d="M 73 39 L 56 50 L 56 73 L 73 62 Z" fill="#ffffff" />
             </svg>
-            <span className="text-[8px] font-mono tracking-widest text-zinc-400 uppercase mt-0.5 font-bold">
-              Klotski Core
-            </span>
           </div>
         </div>
 
